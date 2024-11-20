@@ -9,9 +9,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Daniel Bhatti" />
+<meta name="author" content="Joey Rodriguez and Daniel Bhatti" />
 
-<meta name="date" content="2024-11-14" />
+<meta name="date" content="2024-11-22" />
 
 <title>MATH361 Rough Draft</title>
 
@@ -351,12 +351,29 @@ display: none;
 
 
 <h1 class="title toc-ignore">MATH361 Rough Draft</h1>
-<h4 class="author">Daniel Bhatti</h4>
-<h4 class="date">2024-11-14</h4>
+<h4 class="author">Joey Rodriguez and Daniel Bhatti</h4>
+<h4 class="date">2024-11-22</h4>
 
 </div>
 
 
+<pre><code># Use this code to pull data from Kaggle; this should already work with NYC Citibike dataset
+# Install and load necessary packages
+# install.packages(&quot;kaggler&quot;)  # If not already installed
+library(kaggler)
+
+# Authenticate with Kaggle (you need to set up your API key first)
+kgl_auth(key = &quot;your_kaggle_api_key&quot;)
+
+# Download the dataset
+kgl_download_file(
+  owner_dataset = &quot;akkithetechie/new-york-city-bike-share-dataset&quot;,
+  file_name = &quot;NYC-BikeShare-2015-2017-combined.csv.zip&quot;,
+  destfile = &quot;NYC-BikeShare-2015-2017-combined.csv.zip&quot;
+)
+
+# Unzip the file
+unzip(&quot;NYC-BikeShare-2015-2017-combined.csv.zip&quot;, exdir = &quot;NYC_BikeShare_Data&quot;)</code></pre>
 <div id="r-markdown" class="section level2">
 <h2>R Markdown</h2>
 <p>This is an R Markdown document. Markdown is a simple formatting
