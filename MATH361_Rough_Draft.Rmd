@@ -9,14 +9,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```
+```{r kaggler}
 # Use this code to pull data from Kaggle; this should already work with NYC Citibike dataset
 # Install and load necessary packages
-# install.packages("kaggler")  # If not already installed
+install.packages("kaggler")  # If not already installed
 library(kaggler)
 
 # Authenticate with Kaggle (you need to set up your API key first)
-kgl_auth(key = "your_kaggle_api_key")
+kgl_auth(key = "56da16ec80846a2ba99795cee310fd45")
 
 # Download the dataset
 kgl_download_file(
