@@ -357,23 +357,25 @@ display: none;
 </div>
 
 
-<pre><code># Use this code to pull data from Kaggle; this should already work with NYC Citibike dataset
-# Install and load necessary packages
-# install.packages(&quot;kaggler&quot;)  # If not already installed
-library(kaggler)
-
-# Authenticate with Kaggle (you need to set up your API key first)
-kgl_auth(key = &quot;your_kaggle_api_key&quot;)
-
-# Download the dataset
-kgl_download_file(
-  owner_dataset = &quot;akkithetechie/new-york-city-bike-share-dataset&quot;,
-  file_name = &quot;NYC-BikeShare-2015-2017-combined.csv.zip&quot;,
-  destfile = &quot;NYC-BikeShare-2015-2017-combined.csv.zip&quot;
-)
-
-# Unzip the file
-unzip(&quot;NYC-BikeShare-2015-2017-combined.csv.zip&quot;, exdir = &quot;NYC_BikeShare_Data&quot;)</code></pre>
+<pre class="r"><code>library(readr)
+trip = read_csv(&#39;trip.csv&#39;)</code></pre>
+<pre><code>## Rows: 50792 Columns: 12
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr (9): starttime, stoptime, bikeid, from_station_name, to_station_name, fr...
+## dbl (3): trip_id, tripduration, birthyear
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>weather = read_csv(&#39;weather.csv.xls&#39;)</code></pre>
+<pre><code>## Rows: 689 Columns: 21
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr  (3): Date, Max_Gust_Speed_MPH, Events
+## dbl (18): Max_Temperature_F, Mean_Temperature_F, Min_TemperatureF, Max_Dew_P...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <div id="r-markdown" class="section level2">
 <h2>R Markdown</h2>
 <p>This is an R Markdown document. Markdown is a simple formatting
