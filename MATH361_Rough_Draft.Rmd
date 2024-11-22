@@ -211,6 +211,11 @@ df$Mean_Visibility_Miles_trans <- df$Mean_Visibility_Miles^10
 transform_out <- lm(total_trips_trans ~ Mean_Temperature_F_trans + Mean_Humidity_trans + MeanDew_Point_F + Mean_Visibility_Miles_trans, data = df)
 
 #The transformed model is not very impressive. Good diagnostics, R^2 of 0.6484
+
+partialmodel3 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Max_Temperature_F, data = df)
+
+#Best model
+
 ```
 
 ## Conclusion/Discussion
