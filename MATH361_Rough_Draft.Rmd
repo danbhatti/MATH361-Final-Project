@@ -9,34 +9,70 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r read_data}
+## Introduction
+
+```{r read_data, include=FALSE}
 library(readr)
-trip = read_csv('trip.csv')
+library(dplyr)
+trip = read_csv('pronto-cycle-share-trip-data.csv')
 weather = read_csv('weather.csv.xls')
+# select for each trip and its duration
+trip = select(trip, starttime, tripduration)
+# map unique dates to integers starting at 1
+trip$date <- as.Date(trip$starttime, format = "%m/%d/%Y %H:%M")
+unique_dates <- sort(unique(trip$date))
+
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
+
+trip$day_number = date_to_number[as.character(trip$date)]
+trip$count = 1
+trip = select(trip, count, tripduration, day_number)
+print(trip)
+
+ridership = trip %>% group_by(day_number) %>%
+  summarise(total_trips = sum(count),
+            total_durations = sum(tripduration),
+            .groups = 'drop')
+
+
+weather$range = weather$Max_Temperature_F - weather$Min_TemperatureF
+
+
+
+
+weather$date <- as.Date(weather$Date, format = "%m/%d/%Y")
+
+
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
+
+weather$day_number = date_to_number[as.character(weather$date)]
+
+combined = left_join(weather,ridership, by='day_number')
+
+
+
+```
+## Methods/ Analysis
+
+```{r rplot, echo=FALSE}
+plot(combined$Precipitation_In,combined$total_trips)
+cor(combined$Precipitation_In,combined$total_trips)
+
+
+out = lm(total_trips ~ Mean_Temperature_F, data = combined)
+par(mfrow=c(2,2))
+plot(out)
 ```
 
-## R Markdown
+## Conclusion/Discussion
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
 
-```{r cars}
 
-```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-Introduction
-
-Methods/ Analysis
-
-Conclusion/Discussion
