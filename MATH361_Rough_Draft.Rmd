@@ -216,6 +216,12 @@ partialmodel3 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+
 
 #Best model
 
+partialmodel4 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Max_Temperature_F+temp_range, data = df)
+
+fullmodel2 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Mean_Visibility_Miles+Mean_Sea_Level_Pressure_In, data = df)
+
+anova(partialmodel,fullmodel2)
+
 ```
 
 ## Conclusion/Discussion
@@ -237,6 +243,27 @@ cor(df$total_durations, df$MeanDew_Point_F)
 ```
 
 
+#Data selection
+
+The trip data frame contains x cases and y variables. The weather data frame contains n cases and m variables. Ultimately, our goal is to join these two datasets. We began by aggregating trip data for each day we have data for. 
+
+From the trip data frame, we selected start_time and tripduration. We stripped the date from the format "%m/%d/%Y %H:%M, collected the unique dates, and mapped unique dates to the natural numbers by creating a variable called day_number. We also added a column of ones called count. Now, each trip has a duration tripduration, a count (1), and a day (ranging from 1 to 689). From the trip dataset, we created a new dataframe called ridership that aggregates trips by day. At the end of this, ridership has n observations and 3 columns: count, tripduration, and day_number.
+
+From the weather data frame, we used the mapping created for the trip data set to map unique dates to the natural numbers. We also created a new variable, temp_range, by computing the difference between Max_Temperature_F  and Min_TemperatureF for each day. After this, we created our data frame for data analysis, df, by left joining weather and ridership by day_number. The final data frame contains m rows and n columns. The variables are listed in a table below, with brief descriptions where appropriate.
 
 
+#Model Selection
+
+Our model and how we derived it:
+
+The equation for our final regression model is:
+
+total_trips = 277.1643 – 4.95*Mean_Humidity + 5.90*MeanDew_Point – 118.151*Precipitation_In – 7.91*Mean_Wind_Speed + 2.94*Max_Temperature
+
+Each regressor is significant at at least the 0.01 level, and the diagnostic plots look good. 
+
+In order to obtain this model, we first did some exploratory data analysis, plotting total trips against certain variables and obtaining their correlation. We then several basic (one regressor) linear models of total_trips vs some of our variables. The variables that we considered were: mean temperature, mean humidity, mean dew point, precipitation in inches, mean wind speed, mean miles of visibility, mean sea level pressure,  temperature range, and max temperature. These were the original variables we considered on account of the fact that they: 1.seemed to have some relationship with total trips based on plots and correlation, and 2. made sense to us as predictors of ridership from an intuitive perspective. After trying several single variable models, we found that few of them had very high R^2, with a  notable exception that a weighted least squares model of wind speed high worked very well. We then decided to make a “full” model with all of the variables above, except only using mean temperature instead of temperature range and max temperature as 1. mean and max were extremely highly correlated (>97%) and 2. we thought 2 temperature variables would be redundant. The output of the full model showed that Mean temperature, mean visibility miles, and mean sea level pressure did not have coefficients that were significantly different from zero. We made a model dropping these parameters and then did an anova (partial f) between the two models to see if we could justifiably drop them and it showed that we could. At this point all of the predictors were significant and the adjusted R^2 was 0.7095. However, we got the idea to try adding temperature range or max temperature to this model. Including temperature range did not improve the R^2, and it was not significant in the model, however, including max temperature did improve the adjusted R^2 and the regressor was also significant. We decided that this would be our final model. Each regressor is significant at at least the 0.01 level, and the diagnostic plots look good. The adjusted R^2 is 0.712. 
+We also tried to use powerTransformations, but it only worked for some of the variables as others did not have strictly positive values. For the variables that did successfully power transform, the adjusted R^2 of the subsequent model was not greatly improved and few of the regressors were significant. 
+Our final model has some nice properties, in that the diagnostic plots show that it satisfies the assumptions for linear regression well, it is perfectly basic in terms of transportations, and partly on account of that, it is not too difficult to interpret. 
+In terms of interpretation, our model predicts that holding all else equal, every 1% increase in average humidity will lead the total number of bike trips to decrease by 4.95. It predicts that holding all else equal, for every 1 degree increase in the average dew point (Fahrenheit for this and all future mentions of degrees) Seattle will see a drop in bike trips of 5.90.  Our model predicts that all else equal, for every 1 extra inch of precipitation, total bike rides will drop by 118. It also predicts that holding all else equal, a 1 mile per hour increase in the average wind speed will decrease total bike trips by 7.91. Lastly our model predicts that holding all else equal, a 1 degree increase in the maximum temperature will increase the number of bike trips by 2.94. 
 
