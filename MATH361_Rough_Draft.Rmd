@@ -1,5 +1,5 @@
 ---
-title: "MATH361 Rough Draft"
+title: "Predicting Bike Share Ridership based on Weather Data in Seattle"
 author: "Joey Rodriguez and Daniel Bhatti"
 date: "2024-11-22"
 output:
@@ -20,7 +20,7 @@ library(patchwork)
 library(zoo)
 ```
 
-## Introduction
+# Introduction
 A bike share system – or simply bike share – is a service available to residents and tourists of many North American cities. Bike share connects riders with bikes which they can rent and ride from their smartphone. People choose ride share for commuting and for leisure; along with other modes like private car, ride share, mass- and micro- transit, bike share is one option within a suite of transportation options,  designed by planners and engineers to get people where they need to go. 
 
 The interaction between weather and ridership is intuitive. 
@@ -62,43 +62,24 @@ weather = weather[,-1] # remove the old date
 # this will be our data frame going forward
 df = left_join(weather,ridership, by='day_number')
 ```
-
+## Bike Ridership 
 ```{r expl_data, echo = FALSE}
-
-# Plot 1
-plot1 <- ggplot(df, aes(x = day_number, y = total_trips)) +
-  geom_point() +
-  labs(
-    x = "Day Number (n)",
-    y = "Total Bike Ridership"
-  ) +
-  theme_minimal()
-
-# Plot 2
-plot2 <- ggplot(df, aes(x = day_number, y = total_durations)) +
-  geom_point() +
-  labs(
-    x = "Day Number (n)",
-    y = "Combined Ride Durations (secs)"
-  ) +
-  theme_minimal()
-
-# Combine plots side-by-side
-combined_plot <- (plot1 + plot2) + plot_annotation(title = "Bike Ridership in Seattle beginning 13 October 2014")
-
-combined_plot
-
+par(mfrow=c(1,2))
+plot(df$day_number, df$total_trips, xlab = "Day Number", ylab = "Total Bike Ridership")
+plot(df$day_number, df$total_durations, xlab = "Day Number", ylab = "Combined Ride Durations (secs)")
 ```
 
 
 
 
-## Methods/ Analysis
-
+# Methods/ Analysis
+## Best Predictors
 ```{r rplot, echo=FALSE}
+par(mfrow=c(2,2))
 plot(df$Precipitation_In,df$total_trips)
-cor(df$Precipitation_In,df$total_trips)
-
+plot(df$Mean_Temperature_F,df$total_trips)
+plot(df$Mean_Humidity,df$total_trips)
+plot(df$Mean_Wind_Speed_MPH, df$total_trips)
 
 out = lm(total_trips ~ Mean_Temperature_F, data = df)
 par(mfrow=c(2,2))
@@ -107,14 +88,26 @@ summary(out)
 #Adjusted R^2 is 0.5612
 
 outHum = lm(total_trips ~ Mean_Humidity, data = df)
-
+par(mfrow=c(2,2))
+plot(outHum)
+summary(outHum)
 #Diagnostic plots look incredible. Adj R^2 = 0.4611
 
 outRain = lm(total_trips ~ Precipitation_In, data = df)
+par(mfrow=c(2,2))
+plot(outRain)
+summary(outRain)
 
 outWind = lm(total_trips ~ Mean_Wind_Speed_MPH, data =df)
+par(mfrow=c(2,2))
+plot(outWind)
+summary(outWind)
 #Plots bad, R^2 <0.2
 
+
+```
+
+```{r something}
 rainResiduals <- resid(outRain)
 windResiduals <- resid(outWind)
 
@@ -194,12 +187,12 @@ testmodel3 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F
 #Suddenly temperature is not significant
 
 
-#powerTransform(cbind(df$total_trips,df$Mean_Tempe#rature_F,df$Mean_Humidity,df$MeanDew_Point_F,comb#ined$Precipitation_In,combined$Mean_Wind_Speed_MPH,combined$M#ean_Visibility_Miles))
+#powerTransform(cbind(df$total_trips,df$Mean_Temperature_F,df$#Mean_Humidity,df$MeanDew_Point_F,df$Precipitation_In,df$Mean_#Wind_Speed_MPH,df$Mean_Visibility_Miles))
 
 #This fails as powerTransform needs arguments to be strictly positive and the min
 #of Precipitation and Wind speed are 0
 
-#powerTransform(cbind(combined$total_trips,combined$Mean_Tempe#rature_F,combined$Mean_Humidity,combined$MeanDew_Point_F,comb#ined$Mean_Visibility_Miles))
+powerTransform(cbind(df$total_trips,df$Mean_Temperature_F,df$Mean_Humidity,df$MeanDew_Point_F,df$Mean_Visibility_Miles))
 
 #trips: 0.761, Temperature: 0.760, Humidity: 0.67, Dew point 1.1, Visibility 10
 
@@ -218,7 +211,6 @@ df$Mean_Visibility_Miles_trans <- df$Mean_Visibility_Miles^10
 transform_out <- lm(total_trips_trans ~ Mean_Temperature_F_trans + Mean_Humidity_trans + MeanDew_Point_F + Mean_Visibility_Miles_trans, data = df)
 
 #The transformed model is not very impressive. Good diagnostics, R^2 of 0.6484
-
 ```
 
 ## Conclusion/Discussion
