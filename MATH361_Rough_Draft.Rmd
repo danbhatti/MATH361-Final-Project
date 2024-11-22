@@ -136,6 +136,8 @@ partialmodel2 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+
 
 #Good diagnostics, R^2 is 0.71, all regressors are significant.
 
+#I think that this is the best model.
+
 testmodel = lm(total_trips ~ Mean_Temperature_F + MeanDew_Point_F, data=combined)
 
 #R^2 0.63, good diagnostics.
