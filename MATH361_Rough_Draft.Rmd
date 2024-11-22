@@ -62,6 +62,119 @@ cor(combined$Precipitation_In,combined$total_trips)
 out = lm(total_trips ~ Mean_Temperature_F, data = combined)
 par(mfrow=c(2,2))
 plot(out)
+summary(out)
+#Adjusted R^2 is 0.5612
+
+outHum = lm(total_trips ~ Mean_Humidity, data = combined)
+
+#Diagnostic plots look incredible. Adj R^2 = 0.4611
+
+outRain = lm(total_trips ~ Precipitation_In, data = combined)
+
+#Plots bad, R^2 <0.2
+
+rainResiduals <- resid(outRain)
+
+variance_rain = lm(abs(windResiduals) ~ Mean_Wind_Speed_MPH, data = combined)
+
+rainpredictedvar = predict(variance_rain)
+
+rainweights = 1/(rainpredictedvar^2)
+
+RainWLS <- lm(total_trips ~ Precipitation_In, data = combined, weights = rainweights)
+
+#RainWLS did not produce meaningful improvements.
+
+outDew = lm(total_trips ~ MeanDew_Point_F, data = combined)
+
+#Great plots R^2 is only 0.2
+
+outWind = lm(total_trips ~ Mean_Wind_Speed_MPH, data = combined)
+
+#Good plots R^2 is a paltry 0.07
+
+windweights <- 1/lm(abs(outWind$residuals)~outWind$fitted.values)$fitted.values^2
+
+WindWLS <- lm(total_trips ~ Mean_Wind_Speed_MPH, data = combined, weights = windweights)
+
+#Using WLS on windspeed significantly improves it. The R^2 is 0.7
+
+outRange = lm(total_trips ~ range, data = combined)
+
+#Plots have 1 extremely influential point, the R^2 is 0.315
+#If we are to use mean temp I think we can ignore this variable (as a basic regressor)
+
+outVisible = lm(total_trips ~ Mean_Visibility_Miles, data = combined)
+
+#Plots are mid, R^2 is 0.1313
+
+visresid =  resid(outVisible)
+
+variance_vis = lm(abs(visresid)~Mean_Visibility_Miles, data=combined)
+
+vispredictvar = predict(variance_vis)
+
+visweights = 1/(vispredictvar^2)
+
+VisWLS <- lm(total_trips ~ Mean_Visibility_Miles, data = combined, weights = visweights)
+
+#Very unimpressive.
+
+outSea = lm(total_trips ~ Mean_Sea_Level_Pressure_In, data = combined)
+
+#Criteria for being in full model is that it had a *** significance by itself
+
+fullmodel = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Mean_Visibility_Miles, data = combined)
+
+#Very interestingly Mean temp is not significant. Additionally visibility is far from significant
+
+#Diagnostic plots look very good. R^2 is 0.71
+
+partialmodel = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = combined)
+
+partialmodel2 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = combined)
+
+#Good diagnostics, R^2 is 0.71, all regressors are significant.
+
+testmodel = lm(total_trips ~ Mean_Temperature_F + MeanDew_Point_F, data=combined)
+
+#R^2 0.63, good diagnostics.
+
+testmodel2 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity, data=combined)
+
+#R^2 0.6487, good diagnostics
+
+testmodel3 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F, data=combined)
+
+#Suddenly temperature is not significant
+
+library(car)
+
+powerTransform(cbind(combined$total_trips,combined$Mean_Temperature_F,combined$Mean_Humidity,combined$MeanDew_Point_F,combined$Precipitation_In,combined$Mean_Wind_Speed_MPH,combined$Mean_Visibility_Miles))
+
+#This fails as powerTransform needs arguments to be strictly positive and the min
+#of Precipitation and Wind speed are 0
+
+powerTransform(cbind(combined$total_trips,combined$Mean_Temperature_F,combined$Mean_Humidity,combined$MeanDew_Point_F,combined$Mean_Visibility_Miles))
+
+#trips: 0.761, Temperature: 0.760, Humidity: 0.67, Dew point 1.1, Visibility 10
+
+#Therefore trips 3/4, temperate 3/4, humidity 2/3, Dew point no change visibility, visibility^2
+
+combined$total_trips_trans <- combined$total_trips^(3/4)
+combined$Mean_Temperature_F_trans <- combined$Mean_Temperature_F^(3/4)
+combined$Mean_Humidity_trans <- combined$Mean_Humidity^(2/3)
+combined$Mean_Visibility_Miles_trans <- combined$Mean_Visibility_Miles^2
+
+combined$total_trips_trans <- combined$total_trips^(3/4)
+combined$Mean_Temperature_F_trans <- combined$Mean_Temperature_F^(3/4)
+combined$Mean_Humidity_trans <- combined$Mean_Humidity^(2/3)
+combined$Mean_Visibility_Miles_trans <- combined$Mean_Visibility_Miles^10
+
+transform_out <- lm(total_trips_trans ~ Mean_Temperature_F_trans + Mean_Humidity_trans + MeanDew_Point_F + Mean_Visibility_Miles_trans, data = combined)
+
+#The transformed model is not very impressive. Good diagnostics, R^2 of 0.6484
+
 ```
 
 ## Conclusion/Discussion
@@ -71,6 +184,16 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
 
 
+```{r, echo=FALSE, include=FALSE}
+cor(combined$total_durations,combined$total_trips)
+#Total trips and total durations are only 82.2% correlated
+
+cor(combined$total_durations, combined$Mean_Temperature_F, use = "complete.obs")
+
+cor(combined$total_durations, combined$MeanDew_Point_F)
+
+
+```
 
 
 
