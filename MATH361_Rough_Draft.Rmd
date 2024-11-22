@@ -2,178 +2,220 @@
 title: "MATH361 Rough Draft"
 author: "Joey Rodriguez and Daniel Bhatti"
 date: "2024-11-22"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
+  
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+#imports 
+library(readr)
+library(dplyr)
+library(car)
+library(tinytex)
+library(ggplot2)
+library(patchwork)
+library(zoo)
 ```
 
 ## Introduction
+A bike share system – or simply bike share – is a service available to residents and tourists of many North American cities. Bike share connects riders with bikes which they can rent and ride from their smartphone. People choose ride share for commuting and for leisure; along with other modes like private car, ride share, mass- and micro- transit, bike share is one option within a suite of transportation options,  designed by planners and engineers to get people where they need to go. 
 
-```{r read_data, include=FALSE}
-library(readr)
-library(dplyr)
+The interaction between weather and ridership is intuitive. 
+Favorable weather is marked by sunshine, warm temperatures, moderate humidity, and low wind speed. Humanity's proclivity for the outdoors is highest when the weather is uneventful. When the weather outside is frightful -- think freezing temperatures, gusty, and rainy conditions -- we prefer the indoors. Especially in the United States with its auto-centric development patterns, poor weather often justifies a ``mode-shift'' for those who own a car. When the weather is poor and the infrastructure allows for it, why not drive!?
+
+In this paper, we will fit a regression model to several variables describing the weather in order to predict daily bicycle ridership by trip. We will later consider trip duration as our dependent variable. Seattle has a reputation as a rainy city, and it’s for good reason. There were 287 rainy days between 10/13/2014 and 08/30/2016, a total of 689 days! Yet bike share was active in Seattle over those 689 days, totaling 236,044 trips across the system.
+
+```{r mapping, include=FALSE}
 trip = read_csv('pronto-cycle-share-trip-data.csv')
-weather = read_csv('weather.csv.xls')
-# select for each trip and its duration
-trip = select(trip, starttime, tripduration)
 # map unique dates to integers starting at 1
-trip$date <- as.Date(trip$starttime, format = "%m/%d/%Y %H:%M")
-unique_dates <- sort(unique(trip$date))
 
-date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
-
-trip$day_number = date_to_number[as.character(trip$date)]
-trip$count = 1
+trip$date <- as.Date(trip$starttime, format = "%m/%d/%Y %H:%M") # strips the date from its current format
+unique_dates <- sort(unique(trip$date)) # this collects unique dates
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates)) # this maps unique date to the integers, starting at 1
+trip$day_number = date_to_number[as.character(trip$date)] # this adds the integer mapping as a column, day_number
+trip$count = 1 # this adds a one to each obs; useful for add
 trip = select(trip, count, tripduration, day_number)
-print(trip)
 
+# construct new df, ridership, that aggregates trips by day
 ridership = trip %>% group_by(day_number) %>%
   summarise(total_trips = sum(count),
             total_durations = sum(tripduration),
             .groups = 'drop')
+```
 
+```{r clean_data, include = FALSE}
+weather = read_csv('weather.csv.xls')
 
-weather$range = weather$Max_Temperature_F - weather$Min_TemperatureF
+weather$temp_range = weather$Max_Temperature_F - weather$Min_TemperatureF # calculates temperature range for each day
 
+weather$date <- as.Date(weather$Date, format = "%m/%d/%Y") # strips the date from its current format
 
-
-
-weather$date <- as.Date(weather$Date, format = "%m/%d/%Y")
-
-
+# maps unique date to the integers, like the chunk above
 date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
-
 weather$day_number = date_to_number[as.character(weather$date)]
 
-combined = left_join(weather,ridership, by='day_number')
+weather = weather[,-1] # remove the old date
 
+# this will be our data frame going forward
+df = left_join(weather,ridership, by='day_number')
+```
 
+```{r expl_data, echo = FALSE}
+
+# Plot 1
+plot1 <- ggplot(df, aes(x = day_number, y = total_trips)) +
+  geom_point() +
+  labs(
+    x = "Day Number (n)",
+    y = "Total Bike Ridership"
+  ) +
+  theme_minimal()
+
+# Plot 2
+plot2 <- ggplot(df, aes(x = day_number, y = total_durations)) +
+  geom_point() +
+  labs(
+    x = "Day Number (n)",
+    y = "Combined Ride Durations (secs)"
+  ) +
+  theme_minimal()
+
+# Combine plots side-by-side
+combined_plot <- (plot1 + plot2) + plot_annotation(title = "Bike Ridership in Seattle beginning 13 October 2014")
+
+combined_plot
 
 ```
+
+
+
+
 ## Methods/ Analysis
 
 ```{r rplot, echo=FALSE}
-plot(combined$Precipitation_In,combined$total_trips)
-cor(combined$Precipitation_In,combined$total_trips)
+plot(df$Precipitation_In,df$total_trips)
+cor(df$Precipitation_In,df$total_trips)
 
 
-out = lm(total_trips ~ Mean_Temperature_F, data = combined)
+out = lm(total_trips ~ Mean_Temperature_F, data = df)
 par(mfrow=c(2,2))
 plot(out)
 summary(out)
 #Adjusted R^2 is 0.5612
 
-outHum = lm(total_trips ~ Mean_Humidity, data = combined)
+outHum = lm(total_trips ~ Mean_Humidity, data = df)
 
 #Diagnostic plots look incredible. Adj R^2 = 0.4611
 
-outRain = lm(total_trips ~ Precipitation_In, data = combined)
+outRain = lm(total_trips ~ Precipitation_In, data = df)
 
+outWind = lm(total_trips ~ Mean_Wind_Speed_MPH, data =df)
 #Plots bad, R^2 <0.2
 
 rainResiduals <- resid(outRain)
+windResiduals <- resid(outWind)
 
-variance_rain = lm(abs(windResiduals) ~ Mean_Wind_Speed_MPH, data = combined)
+variance_rain = lm(abs(windResiduals) ~ Mean_Wind_Speed_MPH, data = df)
 
 rainpredictedvar = predict(variance_rain)
 
 rainweights = 1/(rainpredictedvar^2)
 
-RainWLS <- lm(total_trips ~ Precipitation_In, data = combined, weights = rainweights)
+RainWLS <- lm(total_trips ~ Precipitation_In, data = df, weights = rainweights)
 
 #RainWLS did not produce meaningful improvements.
 
-outDew = lm(total_trips ~ MeanDew_Point_F, data = combined)
+outDew = lm(total_trips ~ MeanDew_Point_F, data = df)
 
 #Great plots R^2 is only 0.2
 
-outWind = lm(total_trips ~ Mean_Wind_Speed_MPH, data = combined)
+outWind = lm(total_trips ~ Mean_Wind_Speed_MPH, data = df)
 
 #Good plots R^2 is a paltry 0.07
 
 windweights <- 1/lm(abs(outWind$residuals)~outWind$fitted.values)$fitted.values^2
 
-WindWLS <- lm(total_trips ~ Mean_Wind_Speed_MPH, data = combined, weights = windweights)
+WindWLS <- lm(total_trips ~ Mean_Wind_Speed_MPH, data = df, weights = windweights)
 
 #Using WLS on windspeed significantly improves it. The R^2 is 0.7
 
-outRange = lm(total_trips ~ range, data = combined)
+outRange = lm(total_trips ~ temp_range, data = df)
 
 #Plots have 1 extremely influential point, the R^2 is 0.315
 #If we are to use mean temp I think we can ignore this variable (as a basic regressor)
 
-outVisible = lm(total_trips ~ Mean_Visibility_Miles, data = combined)
+outVisible = lm(total_trips ~ Mean_Visibility_Miles, data = df)
 
 #Plots are mid, R^2 is 0.1313
 
 visresid =  resid(outVisible)
 
-variance_vis = lm(abs(visresid)~Mean_Visibility_Miles, data=combined)
+variance_vis = lm(abs(visresid)~Mean_Visibility_Miles, data=df)
 
 vispredictvar = predict(variance_vis)
 
 visweights = 1/(vispredictvar^2)
 
-VisWLS <- lm(total_trips ~ Mean_Visibility_Miles, data = combined, weights = visweights)
+VisWLS <- lm(total_trips ~ Mean_Visibility_Miles, data = df, weights = visweights)
 
 #Very unimpressive.
 
-outSea = lm(total_trips ~ Mean_Sea_Level_Pressure_In, data = combined)
+outSea = lm(total_trips ~ Mean_Sea_Level_Pressure_In, data = df)
 
 #Criteria for being in full model is that it had a *** significance by itself
 
-fullmodel = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Mean_Visibility_Miles, data = combined)
+fullmodel = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Mean_Visibility_Miles, data = df)
 
 #Very interestingly Mean temp is not significant. Additionally visibility is far from significant
 
 #Diagnostic plots look very good. R^2 is 0.71
 
-partialmodel = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = combined)
+partialmodel = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = df)
 
-partialmodel2 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = combined)
+partialmodel2 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = df)
 
 #Good diagnostics, R^2 is 0.71, all regressors are significant.
 
 #I think that this is the best model.
 
-testmodel = lm(total_trips ~ Mean_Temperature_F + MeanDew_Point_F, data=combined)
+testmodel = lm(total_trips ~ Mean_Temperature_F + MeanDew_Point_F, data=df)
 
 #R^2 0.63, good diagnostics.
 
-testmodel2 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity, data=combined)
+testmodel2 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity, data=df)
 
 #R^2 0.6487, good diagnostics
 
-testmodel3 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F, data=combined)
+testmodel3 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F, data=df)
 
 #Suddenly temperature is not significant
 
-library(car)
 
-powerTransform(cbind(combined$total_trips,combined$Mean_Temperature_F,combined$Mean_Humidity,combined$MeanDew_Point_F,combined$Precipitation_In,combined$Mean_Wind_Speed_MPH,combined$Mean_Visibility_Miles))
+#powerTransform(cbind(df$total_trips,df$Mean_Tempe#rature_F,df$Mean_Humidity,df$MeanDew_Point_F,comb#ined$Precipitation_In,combined$Mean_Wind_Speed_MPH,combined$M#ean_Visibility_Miles))
 
 #This fails as powerTransform needs arguments to be strictly positive and the min
 #of Precipitation and Wind speed are 0
 
-powerTransform(cbind(combined$total_trips,combined$Mean_Temperature_F,combined$Mean_Humidity,combined$MeanDew_Point_F,combined$Mean_Visibility_Miles))
+#powerTransform(cbind(combined$total_trips,combined$Mean_Tempe#rature_F,combined$Mean_Humidity,combined$MeanDew_Point_F,comb#ined$Mean_Visibility_Miles))
 
 #trips: 0.761, Temperature: 0.760, Humidity: 0.67, Dew point 1.1, Visibility 10
 
 #Therefore trips 3/4, temperate 3/4, humidity 2/3, Dew point no change visibility, visibility^2
 
-combined$total_trips_trans <- combined$total_trips^(3/4)
-combined$Mean_Temperature_F_trans <- combined$Mean_Temperature_F^(3/4)
-combined$Mean_Humidity_trans <- combined$Mean_Humidity^(2/3)
-combined$Mean_Visibility_Miles_trans <- combined$Mean_Visibility_Miles^2
+df$total_trips_trans <- df$total_trips^(3/4)
+df$Mean_Temperature_F_trans <- df$Mean_Temperature_F^(3/4)
+df$Mean_Humidity_trans <- df$Mean_Humidity^(2/3)
+df$Mean_Visibility_Miles_trans <- df$Mean_Visibility_Miles^2
 
-combined$total_trips_trans <- combined$total_trips^(3/4)
-combined$Mean_Temperature_F_trans <- combined$Mean_Temperature_F^(3/4)
-combined$Mean_Humidity_trans <- combined$Mean_Humidity^(2/3)
-combined$Mean_Visibility_Miles_trans <- combined$Mean_Visibility_Miles^10
+df$total_trips_trans <- df$total_trips^(3/4)
+df$Mean_Temperature_F_trans <- df$Mean_Temperature_F^(3/4)
+df$Mean_Humidity_trans <- df$Mean_Humidity^(2/3)
+df$Mean_Visibility_Miles_trans <- df$Mean_Visibility_Miles^10
 
-transform_out <- lm(total_trips_trans ~ Mean_Temperature_F_trans + Mean_Humidity_trans + MeanDew_Point_F + Mean_Visibility_Miles_trans, data = combined)
+transform_out <- lm(total_trips_trans ~ Mean_Temperature_F_trans + Mean_Humidity_trans + MeanDew_Point_F + Mean_Visibility_Miles_trans, data = df)
 
 #The transformed model is not very impressive. Good diagnostics, R^2 of 0.6484
 
@@ -187,12 +229,12 @@ When you click the **Knit** button a document will be generated that includes bo
 
 
 ```{r, echo=FALSE, include=FALSE}
-cor(combined$total_durations,combined$total_trips)
+cor(df$total_durations,df$total_trips)
 #Total trips and total durations are only 82.2% correlated
 
-cor(combined$total_durations, combined$Mean_Temperature_F, use = "complete.obs")
+cor(df$total_durations, df$Mean_Temperature_F, use = "complete.obs")
 
-cor(combined$total_durations, combined$MeanDew_Point_F)
+cor(df$total_durations, df$MeanDew_Point_F)
 
 
 ```
