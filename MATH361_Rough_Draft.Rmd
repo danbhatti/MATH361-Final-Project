@@ -18,15 +18,13 @@ library(tinytex)
 library(ggplot2)
 library(patchwork)
 library(zoo)
+library(knitr)
 ```
 
 # Introduction
 A bike share system – or simply bike share – is a service available to residents and tourists of many North American cities. Bike share connects riders with bikes which they can rent and ride from their smartphone. People choose ride share for commuting and for leisure; along with other modes like private car, ride share, mass- and micro- transit, bike share is one option within a suite of transportation options,  designed by planners and engineers to get people where they need to go. 
 
-The interaction between weather and ridership is intuitive. 
-Favorable weather is marked by sunshine, warm temperatures, moderate humidity, and low wind speed. Humanity's proclivity for the outdoors is highest when the weather is uneventful. When the weather outside is frightful -- think freezing temperatures, gusty, and rainy conditions -- we prefer the indoors. Especially in the United States with its auto-centric development patterns, poor weather often justifies a ``mode-shift'' for those who own a car. When the weather is poor and the infrastructure allows for it, why not drive!?
-
-In this paper, we will fit a regression model to several variables describing the weather in order to predict daily bicycle ridership by trip. We will later consider trip duration as our dependent variable. Seattle has a reputation as a rainy city, and it’s for good reason. There were 287 rainy days between 10/13/2014 and 08/30/2016, a total of 689 days! Yet bike share was active in Seattle over those 689 days, totaling 236,044 trips across the system.
+The interaction between weather and ridership is intuitive. Favorable weather is marked by sunshine, warm temperatures, moderate humidity, and low wind speed. Humanity's proclivity for the outdoors is highest when the weather is uneventful. When the weather outside is frightful -- think freezing temperatures, gusty, and rainy conditions -- we prefer the indoors. Especially in the United States with its auto-centric development patterns, poor weather often justifies a ``mode-shift'' for those who own a car. When the weather is poor and the infrastructure allows for it, why not drive!?
 
 ```{r mapping, include=FALSE}
 trip = read_csv('pronto-cycle-share-trip-data.csv')
@@ -43,7 +41,7 @@ trip = select(trip, count, tripduration, day_number)
 ridership = trip %>% group_by(day_number) %>%
   summarise(total_trips = sum(count),
             total_durations = sum(tripduration),
-            .groups = 'drop')
+            .groups = 'drop'); dim(ridership)
 ```
 
 ```{r clean_data, include = FALSE}
@@ -60,31 +58,37 @@ weather$day_number = date_to_number[as.character(weather$date)]
 weather = weather[,-1] # remove the old date
 
 # this will be our data frame going forward
-df = left_join(weather,ridership, by='day_number')
-```
-## Bike Ridership 
-```{r expl_data, echo = FALSE}
-par(mfrow=c(1,2))
-plot(df$day_number, df$total_trips, xlab = "Day Number", ylab = "Total Bike Ridership")
-plot(df$day_number, df$total_durations, xlab = "Day Number", ylab = "Combined Ride Durations (secs)")
+df = left_join(weather,ridership, by='day_number'); dim(df)
 ```
 
+```{r plot_y, echo = FALSE}
+par(mfrow=c(1,2))
+plot(df$day_number, df$total_trips, xlab="", ylab = "Total Bike Ridership")
+plot(df$day_number, df$total_durations, xlab= "", ylab = "Combined Ride Durations (secs)")
+mtext("Daily Bike Share Ridership in Seattle", side = 3, line = -2, cex = 1.5, outer = TRUE)
+mtext("Days since 13 October 2014", side = 1, line = -2, outer = TRUE)
+```
+In this paper, we will fit a regression model to several variables describing the weather in order to predict daily bicycle ridership by trip. We will later consider trip duration as our dependent variable. Seattle has a reputation as a rainy city, and it’s for good reason. There were 287 rainy days between 10/13/2014 and 08/30/2016, a total of 689 days, or 41\% of the days. Yet bike share was active in Seattle over those 689 days, totaling 236,044 trips across the system.
 
 
 
 # Methods/ Analysis
-## Best Predictors
-```{r rplot, echo=FALSE}
-par(mfrow=c(2,2))
-plot(df$Precipitation_In,df$total_trips)
-plot(df$Mean_Temperature_F,df$total_trips)
-plot(df$Mean_Humidity,df$total_trips)
-plot(df$Mean_Wind_Speed_MPH, df$total_trips)
+```{r plot predictors, echo=FALSE}
+par(mfrow=c(2,2), mai = c(1,0.1,0.1,0.1))
+plot(df$Precipitation_In,df$total_trips, xlab = "Precipitation (in)"); abline(reg = lm(df$total_trips ~ df$Precipitation_In), col = 'red')
 
+plot(df$Mean_Temperature_F,df$total_trips, xlab = "Mean Temperature (F)"); abline(reg = lm(df$total_trips ~ df$Mean_Temperature_F), col = 'red')
+
+plot(df$Mean_Humidity,df$total_trips, xlab = "Mean Humidity (%)"); abline(reg = lm(df$total_trips ~ df$Mean_Humidity), col = 'red')
+
+plot(df$Mean_Wind_Speed_MPH, df$total_trips, xlab = "Mean Wind Speed (MPH)"); abline(reg = lm(df$total_trips ~ df$Mean_Wind_Speed_MPH), col = 'red')
+```
+
+```{r plot diag plots, echo=FALSE}
 out = lm(total_trips ~ Mean_Temperature_F, data = df)
-par(mfrow=c(2,2))
-plot(out)
-summary(out)
+#par(mfrow=c(2,2))
+#plot(out)
+#summary(out)
 #Adjusted R^2 is 0.5612
 
 outHum = lm(total_trips ~ Mean_Humidity, data = df)
@@ -94,20 +98,18 @@ summary(outHum)
 #Diagnostic plots look incredible. Adj R^2 = 0.4611
 
 outRain = lm(total_trips ~ Precipitation_In, data = df)
-par(mfrow=c(2,2))
-plot(outRain)
-summary(outRain)
+#par(mfrow=c(2,2))
+#plot(outRain)
+#summary(outRain)
 
 outWind = lm(total_trips ~ Mean_Wind_Speed_MPH, data =df)
-par(mfrow=c(2,2))
-plot(outWind)
-summary(outWind)
+#par(mfrow=c(2,2))
+#plot(outWind)
+#summary(outWind)
 #Plots bad, R^2 <0.2
-
-
 ```
 
-```{r something}
+```{r modelling, include = FALSE}
 rainResiduals <- resid(outRain)
 windResiduals <- resid(outWind)
 
@@ -224,11 +226,8 @@ anova(partialmodel,fullmodel2)
 
 ```
 
-## Conclusion/Discussion
+# Conclusion/Discussion
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
 
 
 ```{r, echo=FALSE, include=FALSE}
@@ -243,22 +242,68 @@ cor(df$total_durations, df$MeanDew_Point_F)
 ```
 
 
-#Data selection
+## Data selection
 
-The trip data frame contains x cases and y variables. The weather data frame contains n cases and m variables. Ultimately, our goal is to join these two datasets. We began by aggregating trip data for each day we have data for. 
+The \texttt{trip} data frame contains 175,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames We began by aggregating trip data for each day we have data for. 
 
-From the trip data frame, we selected start_time and tripduration. We stripped the date from the format "%m/%d/%Y %H:%M, collected the unique dates, and mapped unique dates to the natural numbers by creating a variable called day_number. We also added a column of ones called count. Now, each trip has a duration tripduration, a count (1), and a day (ranging from 1 to 689). From the trip dataset, we created a new dataframe called ridership that aggregates trips by day. At the end of this, ridership has n observations and 3 columns: count, tripduration, and day_number.
+From the \texttt{trip} data frame, we selected only two variables: \texttt{start\_time} and \texttt{tripduration}. We stripped the date from the \texttt{start\_time} (encoded in the format \texttt{\%m/\%d/\%Y \%H:\%M}), collected the unique dates, and mapped unique dates to the natural numbers. The mapping was represented by a new variable called \texttt{day\_number}. We also added a column of ones called \texttt{count} so that each trip represented a single trip (this would make it easier to sum trips by day). Now, each trip has a duration \texttt{tripduration}, a trip \texttt{count} (1), and a \texttt{day\_number} (ranging from 1 to 689). From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}.
 
-From the weather data frame, we used the mapping created for the trip data set to map unique dates to the natural numbers. We also created a new variable, temp_range, by computing the difference between Max_Temperature_F  and Min_TemperatureF for each day. After this, we created our data frame for data analysis, df, by left joining weather and ridership by day_number. The final data frame contains m rows and n columns. The variables are listed in a table below, with brief descriptions where appropriate.
+From the \texttt{weather} data frame, we used the mapping created for the \texttt{trip} data set to map unique dates to the natural numbers. We also created a new variable, \texttt{temp\_range}, by computing the difference between \texttt{Max\_Temperature\_F} and \texttt{Min\_TemperatureF} for each day. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 25 columns (variables). The variable names are listed in a table below with brief descriptions.
 
+```{r rtable, echo = FALSE}
+# Create a data frame with variable names and descriptions
+variable_descriptions <- data.frame(
+  Variable = c(
+    "Max_Temperature_F", "Mean_Temperature_F", "Min_TemperatureF",
+    "Max_Dew_Point_F", "MeanDew_Point_F", "Min_Dewpoint_F",
+    "Max_Humidity", "Mean_Humidity", "Min_Humidity",
+    "Max_Sea_Level_Pressure_In", "Mean_Sea_Level_Pressure_In", "Min_Sea_Level_Pressure_In",
+    "Max_Visibility_Miles", "Mean_Visibility_Miles", "Min_Visibility_Miles",
+    "Max_Wind_Speed_MPH", "Mean_Wind_Speed_MPH", "Max_Gust_Speed_MPH",
+    "Precipitation_In", "Events", "temp_range", "date", "day_number",
+    "total_trips", "total_durations"
+  ),
+  Description = c(
+    "Maximum temperature in Fahrenheit recorded that day",
+    "Mean temperature in Fahrenheit recorded that day",
+    "Minimum temperature in Fahrenheit recorded that day",
+    "Maximum dew point in Fahrenheit recorded that day",
+    "Mean dew point in Fahrenheit recorded that day",
+    "Minimum dew point in Fahrenheit recorded that day",
+    "Maximum humidity percentage recorded that day",
+    "Mean humidity percentage recorded that day",
+    "Minimum humidity percentage recorded that day",
+    "Maximum sea-level pressure in inches recorded that day",
+    "Mean sea-level pressure in inches recorded that day",
+    "Minimum sea-level pressure in inches recorded that day",
+    "Maximum visibility in miles recorded that day",
+    "Mean visibility in miles recorded that day",
+    "Minimum visibility in miles recorded that day",
+    "Maximum wind speed in miles per hour recorded that day",
+    "Mean wind speed in miles per hour recorded that day",
+    "Maximum gust speed in miles per hour recorded that day",
+    "Precipitation in inches recorded that day",
+    "Weather events (e.g., Rain, Snow) that occurred that day",
+    "Temperature range (Max_Temperature_F - Min_TemperatureF)",
+    "Date of the observation",
+    "Days since 13 October 2014",
+    "Total trips recorded that day",
+    "Total duration of all trips recorded that day in seconds"
+  )
+)
 
-#Model Selection
+# Render the table using kable
+knitr::kable(variable_descriptions, col.names = c("Variable", "Description"), caption = "Variable Descriptions (689 rows, 25 columns)")
+
+```
+
+## Model Selection
 
 Our model and how we derived it:
 
 The equation for our final regression model is:
 
-total_trips = 277.1643 – 4.95*Mean_Humidity + 5.90*MeanDew_Point – 118.151*Precipitation_In – 7.91*Mean_Wind_Speed + 2.94*Max_Temperature
+  \texttt{total\_trips} = 277.1643 – 4.95(\texttt{Mean\_Humidity}) + 5.90(\texttt{MeanDew\_Point}) – 118.151(\texttt{Precipitation\_In}) – 7.91(\texttt{Mean\_Wind\_Speed}) + 2.94(\texttt{Max\_Temperature})
 
 Each regressor is significant at at least the 0.01 level, and the diagnostic plots look good. 
 
@@ -266,4 +311,24 @@ In order to obtain this model, we first did some exploratory data analysis, plot
 We also tried to use powerTransformations, but it only worked for some of the variables as others did not have strictly positive values. For the variables that did successfully power transform, the adjusted R^2 of the subsequent model was not greatly improved and few of the regressors were significant. 
 Our final model has some nice properties, in that the diagnostic plots show that it satisfies the assumptions for linear regression well, it is perfectly basic in terms of transportations, and partly on account of that, it is not too difficult to interpret. 
 In terms of interpretation, our model predicts that holding all else equal, every 1% increase in average humidity will lead the total number of bike trips to decrease by 4.95. It predicts that holding all else equal, for every 1 degree increase in the average dew point (Fahrenheit for this and all future mentions of degrees) Seattle will see a drop in bike trips of 5.90.  Our model predicts that all else equal, for every 1 extra inch of precipitation, total bike rides will drop by 118. It also predicts that holding all else equal, a 1 mile per hour increase in the average wind speed will decrease total bike trips by 7.91. Lastly our model predicts that holding all else equal, a 1 degree increase in the maximum temperature will increase the number of bike trips by 2.94. 
+
+```{r final model, echo = FALSE}
+partialmodel3 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Max_Temperature_F, data = df)
+
+#regression summary of the final model
+summary(partialmodel3)
+
+# diagnostic plots
+par(mfrow=c(2,2))
+plot(partialmodel3)
+
+# pairs plot
+pairs(~Mean_Humidity + MeanDew_Point_F + Precipitation_In + Mean_Wind_Speed_MPH + Max_Temperature_F, data = df)
+```
+
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
 
