@@ -67,6 +67,9 @@ plot(df$day_number, df$total_trips, xlab="", ylab = "Total Bike Ridership")
 plot(df$day_number, df$total_durations, xlab= "", ylab = "Combined Ride Durations (secs)")
 mtext("Daily Bike Share Ridership in Seattle", side = 3, line = -2, cex = 1.5, outer = TRUE)
 mtext("Days since 13 October 2014", side = 1, line = -2, outer = TRUE)
+
+par(mfrow=c(1,1))
+plot(df$day_number, df$total_durations / df$total_trips, xlab="Days since 13 October 2014", ylab = "Average Bike Ridership (secs)")
 ```
 In this paper, we will fit a regression model to several variables describing the weather in order to predict daily bicycle ridership by trip. We will later consider trip duration as our dependent variable. Seattle has a reputation as a rainy city, and it’s for good reason. There were 287 rainy days between 10/13/2014 and 08/30/2016, a total of 689 days, or 41\% of the days. Yet bike share was active in Seattle over those 689 days, totaling 236,044 trips across the system.
 
