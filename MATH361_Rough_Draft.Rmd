@@ -29,15 +29,78 @@ The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains da
 [INSERT PARAGRAPH SUMMARIZING CONCLUSIONS FROM THE RESEARCH]
 
 
-```{r, include=FALSE, fig.cap = "Seattle Pronto in 2016.", out.width = "50%"}
+```{r, echo=FALSE, fig.cap = "PRETTY FIGURE", out.width = "50%"}
 knitr::include_graphics("pronto.png")
 ```
 
 # Exploratory Data Analysis
 
 ## Data Cleaning
+The \texttt{trip} data frame contains 175,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames. We began by aggregating trip data for each day we have data for. 
+
+From the \texttt{trip} data frame, we selected only two variables: \texttt{start\_time} and \texttt{tripduration}. We stripped the date from the \texttt{start\_time} (encoded in the format \texttt{\%m/\%d/\%Y \%H:\%M}), collected the unique dates, and mapped unique dates to the natural numbers. The mapping was represented by a new variable called \texttt{day\_number}. Now, each trip has a duration \texttt{tripduration}, a trip \texttt{count} (1), and a \texttt{day\_number} (ranging from 1 to 689). From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}.
+
+From the \texttt{weather} data frame, we used the mapping created for the \texttt{trip} data set to map unique dates to the natural numbers. We also created a new variable, \texttt{temp\_range}, by computing the difference between \texttt{Max\_Temperature\_F} and \texttt{Min\_TemperatureF} for each day. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 25 columns (variables). The variable names are listed in a table below with brief descriptions.
+
+```{r rtable, echo = FALSE}
+# Create a data frame with variable names and descriptions
+variable_descriptions <- data.frame(
+  Variable = c(
+    "Max_Temperature_F", "Mean_Temperature_F", "Min_TemperatureF",
+    "Max_Dew_Point_F", "MeanDew_Point_F", "Min_Dewpoint_F",
+    "Max_Humidity", "Mean_Humidity", "Min_Humidity",
+    "Max_Sea_Level_Pressure_In", "Mean_Sea_Level_Pressure_In", "Min_Sea_Level_Pressure_In",
+    "Max_Visibility_Miles", "Mean_Visibility_Miles", "Min_Visibility_Miles",
+    "Max_Wind_Speed_MPH", "Mean_Wind_Speed_MPH", "Max_Gust_Speed_MPH",
+    "Precipitation_In", "Events", "temp_range", "date", "day_number",
+    "total_trips", "total_durations", "average_durations"
+  ),
+  Description = c(
+    "Maximum temperature in Fahrenheit recorded that day",
+    "Mean temperature in Fahrenheit recorded that day",
+    "Minimum temperature in Fahrenheit recorded that day",
+    "Maximum dew point in Fahrenheit recorded that day",
+    "Mean dew point in Fahrenheit recorded that day",
+    "Minimum dew point in Fahrenheit recorded that day",
+    "Maximum humidity percentage recorded that day",
+    "Mean humidity percentage recorded that day",
+    "Minimum humidity percentage recorded that day",
+    "Maximum sea-level pressure in inches recorded that day",
+    "Mean sea-level pressure in inches recorded that day",
+    "Minimum sea-level pressure in inches recorded that day",
+    "Maximum visibility in miles recorded that day",
+    "Mean visibility in miles recorded that day",
+    "Minimum visibility in miles recorded that day",
+    "Maximum wind speed in miles per hour recorded that day",
+    "Mean wind speed in miles per hour recorded that day",
+    "Maximum gust speed in miles per hour recorded that day",
+    "Precipitation in inches recorded that day",
+    "Weather events (e.g., Rain, Snow) that occurred that day",
+    "Temperature range (Max_Temperature_F - Min_TemperatureF)",
+    "Date of the observation",
+    "Days since 13 October 2014",
+    "Total trips recorded that day",
+    "Total duration of all trips recorded that day in seconds",
+    "Average ride duration for that day"
+  )
+)
+
+# Render the table using kable
+knitr::kable(variable_descriptions, col.names = c("Variable", "Description"), caption = "Variable Descriptions (689 rows, 25 columns)")
+
+```
 
 ## Selecting the Response Variable
+The three candidates for a good response variable were created from the ``trip.csv`` data set, described in the ``ridership`` data frame, and merged into our final data frame: ``total_trips``, ``trip_durations``, and ``avg_durations``. We briefly discuss the merits of each response variable before a quantitative judgement:
+\begin{itemize}
+\item \texttt{total\_trips} is the most intuitive measure for bike ridership on a given day. It directly answers the question ``How many trips were there?'' for a given day. It gives us a picture of how willing people in the service area were to hop on a bike.
+\item \texttt{total\_durations} gives a more complete picture for the ridership on a given day. Once a rider hopped on a bike, how long did they ride before docking it? This gives us a picture of how willing riders in the service area were to stay on their bikes.
+\item \texttt{avg\_durations} controls for the interaction between bike ridership and ridership durations. By dividing total ridership over total durations, we understand the willingness of those in the service area to both picking up a bike and keep riding on that bike.
+\end{itemize}
+
+
+
+
 
 ## Outliers
 
@@ -76,6 +139,8 @@ weather = weather[,-1] # remove the old date
 
 # this will be our data frame going forward
 df = left_join(weather,ridership, by='day_number'); dim(df)
+
+df$avg_durations = df$total_durations / df$total_trips
 ```
 
 ```{r plot_y, echo = FALSE}
@@ -86,71 +151,21 @@ mtext("Daily Bike Share Ridership in Seattle", side = 3, line = -2, cex = 1.5, o
 mtext("Days since 13 October 2014", side = 1, line = -2, outer = TRUE)
 
 par(mfrow=c(1,1))
-plot(df$day_number, df$total_durations / df$total_trips, xlab="Days since 13 October 2014", ylab = "Average Bike Ridership (secs)")
+plot(df$day_number, df$avg_durations, xlab="Days since 13 October 2014", ylab = "Average Bike Ridership (secs)")
 ```
 
 ```{r plot_hist, echo = FALSE}
-par(mfrow=c(1,2)); hist(df$total_trips); hist(log(df$total_trips))
-par(mfrow=c(1,2)); hist(df$total_durations); hist(log(df$total_durations))
-par(mfrow=c(1,2)); hist(df$total_durations / df$total_trips); hist(log(df$total_durations / df$total_trips))
+par(mfrow = c(3, 2),       # Create a 3x2 grid
+    mar = c(2, 2, 2, 1),   # Reduce margins around individual plots (bottom, left, top, right)
+    oma = c(4, 4, 2, 2))   # Set outer margins for the entire figure
+
+hist(df$total_trips, xlab='', main='Total Trips'); hist(log(df$total_trips), xlab='', main='log(Total Trips)')
+hist(df$total_durations, xlab='', main='Total Durations'); hist(log(df$total_durations), xlab='', main='log(Total Durations)')
+hist(df$avg_durations, xlab='', main='Average Durations'); hist(log(df$avg_durations), xlab='', main='log(Average Durations)')
 ```
 
 
 
-## Data selection
-
-The \texttt{trip} data frame contains 175,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames. We began by aggregating trip data for each day we have data for. 
-
-From the \texttt{trip} data frame, we selected only two variables: \texttt{start\_time} and \texttt{tripduration}. We stripped the date from the \texttt{start\_time} (encoded in the format \texttt{\%m/\%d/\%Y \%H:\%M}), collected the unique dates, and mapped unique dates to the natural numbers. The mapping was represented by a new variable called \texttt{day\_number}. Now, each trip has a duration \texttt{tripduration}, a trip \texttt{count} (1), and a \texttt{day\_number} (ranging from 1 to 689). From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}.
-
-From the \texttt{weather} data frame, we used the mapping created for the \texttt{trip} data set to map unique dates to the natural numbers. We also created a new variable, \texttt{temp\_range}, by computing the difference between \texttt{Max\_Temperature\_F} and \texttt{Min\_TemperatureF} for each day. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 25 columns (variables). The variable names are listed in a table below with brief descriptions.
-
-```{r rtable, echo = FALSE}
-# Create a data frame with variable names and descriptions
-variable_descriptions <- data.frame(
-  Variable = c(
-    "Max_Temperature_F", "Mean_Temperature_F", "Min_TemperatureF",
-    "Max_Dew_Point_F", "MeanDew_Point_F", "Min_Dewpoint_F",
-    "Max_Humidity", "Mean_Humidity", "Min_Humidity",
-    "Max_Sea_Level_Pressure_In", "Mean_Sea_Level_Pressure_In", "Min_Sea_Level_Pressure_In",
-    "Max_Visibility_Miles", "Mean_Visibility_Miles", "Min_Visibility_Miles",
-    "Max_Wind_Speed_MPH", "Mean_Wind_Speed_MPH", "Max_Gust_Speed_MPH",
-    "Precipitation_In", "Events", "temp_range", "date", "day_number",
-    "total_trips", "total_durations"
-  ),
-  Description = c(
-    "Maximum temperature in Fahrenheit recorded that day",
-    "Mean temperature in Fahrenheit recorded that day",
-    "Minimum temperature in Fahrenheit recorded that day",
-    "Maximum dew point in Fahrenheit recorded that day",
-    "Mean dew point in Fahrenheit recorded that day",
-    "Minimum dew point in Fahrenheit recorded that day",
-    "Maximum humidity percentage recorded that day",
-    "Mean humidity percentage recorded that day",
-    "Minimum humidity percentage recorded that day",
-    "Maximum sea-level pressure in inches recorded that day",
-    "Mean sea-level pressure in inches recorded that day",
-    "Minimum sea-level pressure in inches recorded that day",
-    "Maximum visibility in miles recorded that day",
-    "Mean visibility in miles recorded that day",
-    "Minimum visibility in miles recorded that day",
-    "Maximum wind speed in miles per hour recorded that day",
-    "Mean wind speed in miles per hour recorded that day",
-    "Maximum gust speed in miles per hour recorded that day",
-    "Precipitation in inches recorded that day",
-    "Weather events (e.g., Rain, Snow) that occurred that day",
-    "Temperature range (Max_Temperature_F - Min_TemperatureF)",
-    "Date of the observation",
-    "Days since 13 October 2014",
-    "Total trips recorded that day",
-    "Total duration of all trips recorded that day in seconds"
-  )
-)
-
-# Render the table using kable
-knitr::kable(variable_descriptions, col.names = c("Variable", "Description"), caption = "Variable Descriptions (689 rows, 25 columns)")
-
-```
 
 # Methods/ Analysis
 ```{r plot predictors, echo=FALSE}
