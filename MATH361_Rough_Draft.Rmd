@@ -22,15 +22,22 @@ library(knitr)
 ```
 
 # Introduction
-A bike share system – or simply bike share – is a service available to residents and tourists of many North American cities. Bike share connects riders with bikes which they can borrow from their smartphone. People choose ride share for commuting and for leisure; along with other modes of transportation like private car, ride share, mass- and micro- transit, bike share is one option within a suite of transportation options,  designed by planners and engineers to get people where they need to go. 
+Cycle share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of cycle share was Pronto! based in Seattle, Washington. From 2014 to 2017, 500 Pronto! bikes operated across 54 stations in Seattle’s downtown. The City of Seattle, in partnership with Socratica, collected system data during the operating window and provided it to the public via its open data platform. Pronto fell short of the success realized by other bike schemes in the U.S. like Capitol Bikes, Philly’s Indego, and NYC’s CitiBike. Researchers have used system data to conduct a post-mortem on Pronto! as dockless bike share schemes filled the void (2). In this paper, we will investigate the relationship between weather in the service area and daily ridership. In particular, we want to predict daily ridership based on the weather data.
 
-The interaction between weather and ridership is intuitive. Favorable weather is marked by sunshine, warm temperatures, moderate humidity, and low wind speed. People like the outdoors when the weather is uneventful. When the weather outside is frightful -- think freezing temperatures, gusty, and rainy conditions -- we prefer the indoors. Especially in the United States with its auto-centric development patterns, poor weather often justifies a "mode-shift" for those who own a car. When the weather is poor and the infrastructure allows for it, why not drive?
+The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains data on each trip from 13 October 2014 to 31 March 2017, or 901 days. Each case in this dataset is a trip, and there were 275,091 trips over the 901 days. The relevant variables from the original 12 in this dataset are the response variables \texttt{start\_time} and \texttt{trip\_duration}. In the file \texttt{weather.csv.xls}, a single case corresponds to a single day. This file contains the weather data for each day from 13 October 2014 to 31 August 2016, or 689 days. That is, the dates covered by the weather data are a proper subset of the dates covered by the trip data. After merging these data and creating some of our own variables, we move on to exploratory data analysis for the response variables and predictors. This exploration informs our choice for our final model.
 
-Below are our scatterplots for the candidates for the response variables with respect to their day number. We chose ``total_trips`` based on the roughly-normal distribution of the data without transformation. Further down are our scatterplots which justify this choice. Notice that log-transforming works on the other two variables, but the interpretation is harder. For now we will focus on ``total_trips``.
+[INSERT PARAGRAPH SUMMARIZING CONCLUSIONS FROM THE RESEARCH]
 
-In this paper, we will fit a regression model to several variables describing the weather in order to predict daily bicycle ridership by trip. Seattle has a reputation as a rainy city, and it’s for good reason. There were 287 rainy days between 10/13/2014 and 08/30/2016, a total of 689 days, or 41\% of the days. Bike share was active in Seattle over those 689 days, totaling 236,044 trips across the system.
+
+```{r, include=FALSE, fig.cap = "Seattle Pronto in 2016.", out.width = "50%"}
+knitr::include_graphics("pronto.png")
+```
 
 # Exploratory Data Analysis
+
+## Data Cleaning
+
+## Selecting the Response Variable
 
 ## Outliers
 
