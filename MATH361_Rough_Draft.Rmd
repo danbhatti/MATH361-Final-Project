@@ -98,11 +98,7 @@ The three candidates for a good response variable were created from the ``trip.c
 \item \texttt{avg\_durations} controls for the interaction between bike ridership and ridership durations. By dividing total ridership over total durations, we understand the willingness of those in the service area to both picking up a bike and keep riding on that bike.
 \end{itemize}
 
-
-
-
-
-## Outliers
+Below is daily bike ridership in Seattle, visualized with both the total rides taken each day and the total of the durations of the rides taken each day. This figure suggests that outliers in total riders tend to coincide with outliers in ride durations. FOR EXAMPLE... IDENTIFY THE POINT. PROVIDE SOME MORE SUMMARY STATS This coincidence has a flattening effect when we find the average ride durations per day. In fact, the minimum average ride duration record is IDENTIY THIS POINT. PROVIDE SOME MORE SUMMARY STATS. We choose to skip a visualization of the average each day to visualizing the normality of the data.
 
 
 
@@ -144,15 +140,45 @@ df$avg_durations = df$total_durations / df$total_trips
 ```
 
 ```{r plot_y, echo = FALSE}
-par(mfrow=c(1,2))
-plot(df$day_number, df$total_trips, xlab="", ylab = "Total Bike Ridership")
-plot(df$day_number, df$total_durations, xlab= "", ylab = "Combined Ride Durations (secs)")
-mtext("Daily Bike Share Ridership in Seattle", side = 3, line = -2, cex = 1.5, outer = TRUE)
-mtext("Days since 13 October 2014", side = 1, line = -2, outer = TRUE)
 
-par(mfrow=c(1,1))
-plot(df$day_number, df$avg_durations, xlab="Days since 13 October 2014", ylab = "Average Bike Ridership (secs)")
+par(mar = c(4, 4, 4, 4) + 0.1)  # Increase the right margin (4th value)
+
+# Set up the plot
+plot(df$day_number, df$total_trips, 
+     xlab = "Days since 13 October 2014", 
+     ylab = "Total Bike Ridership", 
+     col = "black", 
+     bg = "blue",
+     pch = 21, 
+     ylim = c(0, max(df$total_trips)))  # Primary Y-axis
+
+# Overlay the second dataset
+par(new = TRUE)  # Add a new plot without clearing the previous one
+plot(df$day_number, df$total_durations, 
+     xlab = "", 
+     ylab = "", 
+     col = "black", 
+     bg = "red",
+     pch = 24, 
+     axes = FALSE,  # Suppress axes for this plot
+     ylim = c(0, max(df$total_durations)))  # Secondary Y-axis scale
+
+# Add the secondary Y-axis
+axis(4)  # Right Y-axis in red
+mtext("Total Durations (secs)", side = 4, line = 3)  # Label for right Y-axis
+
+# Add a title for the entire plot
+title(main = "Daily Bike Share Ridership in Seattle", line = 1, cex.main = 1.25)
+
+# Add a legend to differentiate datasets
+legend("topright", legend = c(expression(Sigma ~ "Riders"), expression(Sigma ~ "Durations (secs)")), 
+       col = c("black", "black"), 
+       pt.bg = c("blue", "red"),
+       pch = c(21, 24), 
+       bty = "n")  # No box around the legend
+
 ```
+
 
 ```{r plot_hist, echo = FALSE}
 par(mfrow = c(3, 2),       # Create a 3x2 grid
@@ -165,6 +191,8 @@ hist(df$avg_durations, xlab='', main='Average Durations'); hist(log(df$avg_durat
 ```
 
 
+
+## Outliers
 
 
 # Methods/ Analysis
