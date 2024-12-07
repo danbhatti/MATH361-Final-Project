@@ -36,6 +36,43 @@ knitr::include_graphics("pronto.png")
 # Exploratory Data Analysis
 
 ## Data Cleaning
+```{r mapping, include=FALSE}
+trip = read_csv('pronto-cycle-share-trip-data.csv')
+# map unique dates to integers starting at 1
+
+trip$date <- as.Date(trip$starttime, format = "%m/%d/%Y %H:%M") # strips the date from its current format
+unique_dates <- sort(unique(trip$date)) # this collects unique dates
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates)) # this maps unique date to the integers, starting at 1
+trip$day_number = date_to_number[as.character(trip$date)] # this adds the integer mapping as a column, day_number
+trip$count = 1 # this adds a one to each obs; useful for add
+trip = select(trip, count, tripduration, day_number)
+
+# construct new df, ridership, that aggregates trips by day
+ridership = trip %>% group_by(day_number) %>%
+  summarise(total_trips = sum(count),
+            total_durations = sum(tripduration),
+            .groups = 'drop'); dim(ridership)
+```
+
+```{r clean_data, include = FALSE}
+weather = read_csv('weather.csv.xls')
+
+weather$temp_range = weather$Max_Temperature_F - weather$Min_TemperatureF # calculates temperature range for each day
+
+weather$date <- as.Date(weather$Date, format = "%m/%d/%Y") # strips the date from its current format
+
+# maps unique date to the integers, like the chunk above
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
+weather$day_number = date_to_number[as.character(weather$date)]
+
+weather = weather[,-1] # remove the old date
+
+# this will be our data frame going forward
+df = left_join(weather,ridership, by='day_number'); dim(df)
+
+df$avg_durations = df$total_durations / df$total_trips
+```
+
 The \texttt{trip} data frame contains 175,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames. We began by aggregating trip data for each day we have data for. 
 
 From the \texttt{trip} data frame, we selected only two variables: \texttt{start\_time} and \texttt{tripduration}. We stripped the date from the \texttt{start\_time} (encoded in the format \texttt{\%m/\%d/\%Y \%H:\%M}), collected the unique dates, and mapped unique dates to the natural numbers. The mapping was represented by a new variable called \texttt{day\_number}. Now, each trip has a duration \texttt{tripduration}, a trip \texttt{count} (1), and a \texttt{day\_number} (ranging from 1 to 689). From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}.
@@ -78,7 +115,7 @@ variable_descriptions <- data.frame(
     "Weather events (e.g., Rain, Snow) that occurred that day",
     "Temperature range (Max_Temperature_F - Min_TemperatureF)",
     "Date of the observation",
-    "Days since 13 October 2014",
+    "Days since 12 October 2014",
     "Total trips recorded that day",
     "Total duration of all trips recorded that day in seconds",
     "Average ride duration for that day"
@@ -98,46 +135,16 @@ The three candidates for a good response variable were created from the ``trip.c
 \item \texttt{avg\_durations} controls for the interaction between bike ridership and ridership durations. By dividing total ridership over total durations, we understand the willingness of those in the service area to both picking up a bike and keep riding on that bike.
 \end{itemize}
 
-Below is daily bike ridership in Seattle, visualized with both the total rides taken each day and the total of the durations of the rides taken each day. This figure suggests that outliers in total riders tend to coincide with outliers in ride durations. FOR EXAMPLE... IDENTIFY THE POINT. PROVIDE SOME MORE SUMMARY STATS This coincidence has a flattening effect when we find the average ride durations per day. In fact, the minimum average ride duration record is IDENTIY THIS POINT. PROVIDE SOME MORE SUMMARY STATS. We choose to skip a visualization of the average each day to visualizing the normality of the data.
+The figure below plots daily bike ridership in Seattle, with the total rides taken each day in blue circles and the sum of the durations of the rides taken each day in red triangles. This figure suggests that outliers in total riders tend to coincide with outliers in ride durations. For instance, the day with the highest bike riders -- 941 on Sunday, April 20, 2015 -- was also the day with the second highest sum of ride durations (359.7 hours). It's not clear from lookup what caused bike ridership to be so high on this day; like much of the data we gather from the real world, this result was influenced by many factors that day.
 
 
 
-```{r mapping, include=FALSE}
-trip = read_csv('pronto-cycle-share-trip-data.csv')
-# map unique dates to integers starting at 1
-
-trip$date <- as.Date(trip$starttime, format = "%m/%d/%Y %H:%M") # strips the date from its current format
-unique_dates <- sort(unique(trip$date)) # this collects unique dates
-date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates)) # this maps unique date to the integers, starting at 1
-trip$day_number = date_to_number[as.character(trip$date)] # this adds the integer mapping as a column, day_number
-trip$count = 1 # this adds a one to each obs; useful for add
-trip = select(trip, count, tripduration, day_number)
-
-# construct new df, ridership, that aggregates trips by day
-ridership = trip %>% group_by(day_number) %>%
-  summarise(total_trips = sum(count),
-            total_durations = sum(tripduration),
-            .groups = 'drop'); dim(ridership)
+```{r sum stats,include = FALSE}
+summary(df$total_trips)
+summary(df$total_durations)
+summary(df$avg_durations)
 ```
 
-```{r clean_data, include = FALSE}
-weather = read_csv('weather.csv.xls')
-
-weather$temp_range = weather$Max_Temperature_F - weather$Min_TemperatureF # calculates temperature range for each day
-
-weather$date <- as.Date(weather$Date, format = "%m/%d/%Y") # strips the date from its current format
-
-# maps unique date to the integers, like the chunk above
-date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
-weather$day_number = date_to_number[as.character(weather$date)]
-
-weather = weather[,-1] # remove the old date
-
-# this will be our data frame going forward
-df = left_join(weather,ridership, by='day_number'); dim(df)
-
-df$avg_durations = df$total_durations / df$total_trips
-```
 
 ```{r plot_y, echo = FALSE}
 
@@ -145,7 +152,7 @@ par(mar = c(4, 4, 4, 4) + 0.1)  # Increase the right margin (4th value)
 
 # Set up the plot
 plot(df$day_number, df$total_trips, 
-     xlab = "Days since 13 October 2014", 
+     xlab = "Days since 12 October 2014", 
      ylab = "Total Bike Ridership", 
      col = "black", 
      bg = "blue",
@@ -178,6 +185,8 @@ legend("topright", legend = c(expression(Sigma ~ "Riders"), expression(Sigma ~ "
        bty = "n")  # No box around the legend
 
 ```
+
+36 days earlier on Sunday, March 15, 2015 was the second-wettest March day on record in the Puget Sound Region (SOURCE). The rain was so severe that a mudslide occured in Western Seattle. Knowing this, you'd expect March 15 to have been a bad day for cycling. Only 34 trips took place on this day with a combined ride duration of just 6.3 hours. This was the second worst day for cycling behind Sunday, December 27, 2015 with just 30 trips and 4.5 hours. The coincidence between trips and durations explains the flattening of the data -- the decline in variation from the mean -- once we compute the average ride durations per day. We choose to skip a visualization of the average each day to visualizing the normality of the data.
 
 
 ```{r plot_hist, echo = FALSE}
