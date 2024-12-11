@@ -25,20 +25,20 @@ library(leaps)
 ```
 
 # Introduction
-A bike share system – or simply bike share – is a service available to residents and tourists of many North American cities. Bike share connects riders with bikes which they can borrow from their smartphone. People choose ride share for commuting and for leisure; along with other modes of transportation like private car, ride share, mass- and micro- transit, bike share is one option within a suite of transportation options,  designed by planners and engineers to get people where they need to go. 
+Cycle share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of cycle share was Pronto! based in Seattle, Washington. From 2014 to 2017, 500 Pronto! bikes operated across 54 stations in Seattle’s downtown. The City of Seattle, in partnership with Socratica, collected system data during the operating window and provided it to the public via its open data platform. Pronto fell short of the success realized by other bike schemes in the U.S. like Capitol Bikes, Philly’s Indego, and NYC’s CitiBike. Researchers have used system data to conduct a post-mortem on Pronto! as dockless bike share schemes filled the void (2). In this paper, we will investigate the relationship between weather in the service area and daily ridership. In particular, we want to predict daily ridership based on the weather data.
 
-The interaction between weather and ridership is intuitive. Favorable weather is marked by sunshine, warm temperatures, moderate humidity, and low wind speed. People like the outdoors when the weather is uneventful. When the weather outside is frightful -- think freezing temperatures, gusty, and rainy conditions -- we prefer the indoors. Especially in the United States with its auto-centric development patterns, poor weather often justifies a "mode-shift" for those who own a car. When the weather is poor and the infrastructure allows for it, why not drive?
+The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains data on each trip from 13 October 2014 to 31 March 2017, or 901 days. Each case in this dataset is a trip, and there were 275,091 trips over the 901 days. The relevant variables from the original 12 in this dataset are the response variables \texttt{start\_time} and \texttt{trip\_duration}. In the file \texttt{weather.csv.xls}, a single case corresponds to a single day. This file contains the weather data for each day from 13 October 2014 to 31 August 2016, or 689 days. That is, the dates covered by the weather data are a proper subset of the dates covered by the trip data. After merging these data and creating some of our own variables, we move on to exploratory data analysis for the response variables and predictors. This exploration informs our choice for our final model.
 
-Below are our scatterplots for the candidates for the response variables with respect to their day number. We chose ``total_trips`` based on the roughly-normal distribution of the data without transformation. Further down are our scatterplots which justify this choice. Notice that log-transforming works on the other two variables, but the interpretation is harder. For now we will focus on ``total_trips``.
+[INSERT PARAGRAPH SUMMARIZING CONCLUSIONS FROM THE RESEARCH]
 
-In this paper, we will fit a regression model to several variables describing the weather in order to predict daily bicycle ridership by trip. Seattle has a reputation as a rainy city, and it’s for good reason. There were 287 rainy days between 10/13/2014 and 08/30/2016, a total of 689 days, or 41\% of the days. Bike share was active in Seattle over those 689 days, totaling 236,044 trips across the system.
+
+```{r, echo=FALSE, fig.cap = "PRETTY FIGURE", out.width = "50%"}
+knitr::include_graphics("pronto.png")
+```
 
 # Exploratory Data Analysis
 
-## Outliers
-
-
-
+## Data Cleaning
 ```{r mapping, include=FALSE}
 trip = read_csv('pronto-cycle-share-trip-data.csv')
 # map unique dates to integers starting at 1
@@ -72,28 +72,9 @@ weather = weather[,-1] # remove the old date
 
 # this will be our data frame going forward
 df = left_join(weather,ridership, by='day_number'); dim(df)
+
+df$avg_durations = df$total_durations / df$total_trips
 ```
-
-```{r plot_y, echo = FALSE}
-par(mfrow=c(1,2))
-plot(df$day_number, df$total_trips, xlab="", ylab = "Total Bike Ridership")
-plot(df$day_number, df$total_durations, xlab= "", ylab = "Combined Ride Durations (secs)")
-mtext("Daily Bike Share Ridership in Seattle", side = 3, line = -2, cex = 1.5, outer = TRUE)
-mtext("Days since 13 October 2014", side = 1, line = -2, outer = TRUE)
-
-par(mfrow=c(1,1))
-plot(df$day_number, df$total_durations / df$total_trips, xlab="Days since 13 October 2014", ylab = "Average Bike Ridership (secs)")
-```
-
-```{r plot_hist, echo = FALSE}
-par(mfrow=c(1,2)); hist(df$total_trips); hist(log(df$total_trips))
-par(mfrow=c(1,2)); hist(df$total_durations); hist(log(df$total_durations))
-par(mfrow=c(1,2)); hist(df$total_durations / df$total_trips); hist(log(df$total_durations / df$total_trips))
-```
-
-
-
-## Data selection
 
 The \texttt{trip} data frame contains 175,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames. We began by aggregating trip data for each day we have data for. 
 
@@ -112,7 +93,7 @@ variable_descriptions <- data.frame(
     "Max_Visibility_Miles", "Mean_Visibility_Miles", "Min_Visibility_Miles",
     "Max_Wind_Speed_MPH", "Mean_Wind_Speed_MPH", "Max_Gust_Speed_MPH",
     "Precipitation_In", "Events", "temp_range", "date", "day_number",
-    "total_trips", "total_durations"
+    "total_trips", "total_durations", "average_durations"
   ),
   Description = c(
     "Maximum temperature in Fahrenheit recorded that day",
@@ -137,9 +118,10 @@ variable_descriptions <- data.frame(
     "Weather events (e.g., Rain, Snow) that occurred that day",
     "Temperature range (Max_Temperature_F - Min_TemperatureF)",
     "Date of the observation",
-    "Days since 13 October 2014",
+    "Days since 12 October 2014",
     "Total trips recorded that day",
-    "Total duration of all trips recorded that day in seconds"
+    "Total duration of all trips recorded that day in seconds",
+    "Average ride duration for that day"
   )
 )
 
@@ -147,6 +129,83 @@ variable_descriptions <- data.frame(
 knitr::kable(variable_descriptions, col.names = c("Variable", "Description"), caption = "Variable Descriptions (689 rows, 25 columns)")
 
 ```
+
+## Selecting the Response Variable
+The three candidates for a good response variable were created from the ``trip.csv`` data set, described in the ``ridership`` data frame, and merged into our final data frame: ``total_trips``, ``trip_durations``, and ``avg_durations``. We briefly discuss the merits of each response variable before a quantitative judgement:
+\begin{itemize}
+\item \texttt{total\_trips} is the most intuitive measure for bike ridership on a given day. It directly answers the question ``How many trips were there?'' for a given day. It gives us a picture of how willing people in the service area were to hop on a bike.
+\item \texttt{total\_durations} gives a more complete picture for the ridership on a given day. Once a rider hopped on a bike, how long did they ride before docking it? This gives us a picture of how willing riders in the service area were to stay on their bikes.
+\item \texttt{avg\_durations} controls for the interaction between bike ridership and ridership durations. By dividing total ridership over total durations, we understand the willingness of those in the service area to both picking up a bike and keep riding on that bike.
+\end{itemize}
+
+The figure below plots daily bike ridership in Seattle, with the total rides taken each day in blue circles and the sum of the durations of the rides taken each day in red triangles. This figure suggests that outliers in total riders tend to coincide with outliers in ride durations. For instance, the day with the highest bike riders -- 941 on Sunday, April 20, 2015 -- was also the day with the second highest sum of ride durations (359.7 hours). It's not clear from lookup what caused bike ridership to be so high on this day; like much of the data we gather from the real world, this result was influenced by many factors that day.
+
+
+
+```{r sum stats,include = FALSE}
+summary(df$total_trips)
+summary(df$total_durations)
+summary(df$avg_durations)
+```
+
+
+```{r plot_y, echo = FALSE}
+
+par(mar = c(4, 4, 4, 4) + 0.1)  # Increase the right margin (4th value)
+
+# Set up the plot
+plot(df$day_number, df$total_trips, 
+     xlab = "Days since 12 October 2014", 
+     ylab = "Total Bike Ridership", 
+     col = "black", 
+     bg = "blue",
+     pch = 21, 
+     ylim = c(0, max(df$total_trips)))  # Primary Y-axis
+
+# Overlay the second dataset
+par(new = TRUE)  # Add a new plot without clearing the previous one
+plot(df$day_number, df$total_durations, 
+     xlab = "", 
+     ylab = "", 
+     col = "black", 
+     bg = "red",
+     pch = 24, 
+     axes = FALSE,  # Suppress axes for this plot
+     ylim = c(0, max(df$total_durations)))  # Secondary Y-axis scale
+
+# Add the secondary Y-axis
+axis(4)  # Right Y-axis in red
+mtext("Total Durations (secs)", side = 4, line = 3)  # Label for right Y-axis
+
+# Add a title for the entire plot
+title(main = "Daily Bike Share Ridership in Seattle", line = 1, cex.main = 1.25)
+
+# Add a legend to differentiate datasets
+legend("topright", legend = c(expression(Sigma ~ "Riders"), expression(Sigma ~ "Durations (secs)")), 
+       col = c("black", "black"), 
+       pt.bg = c("blue", "red"),
+       pch = c(21, 24), 
+       bty = "n")  # No box around the legend
+
+```
+
+36 days earlier on Sunday, March 15, 2015 was the second-wettest March day on record in the Puget Sound Region (SOURCE). The rain was so severe that a mudslide occured in Western Seattle. Knowing this, you'd expect March 15 to have been a bad day for cycling. Only 34 trips took place on this day with a combined ride duration of just 6.3 hours. This was the second worst day for cycling behind Sunday, December 27, 2015 with just 30 trips and 4.5 hours. The coincidence between trips and durations explains the flattening of the data -- the decline in variation from the mean -- once we compute the average ride durations per day. We choose to skip a visualization of the average each day to visualizing the normality of the data.
+
+
+```{r plot_hist, echo = FALSE}
+par(mfrow = c(3, 2),       # Create a 3x2 grid
+    mar = c(2, 2, 2, 1),   # Reduce margins around individual plots (bottom, left, top, right)
+    oma = c(4, 4, 2, 2))   # Set outer margins for the entire figure
+
+hist(df$total_trips, xlab='', main='Total Trips'); hist(log(df$total_trips), xlab='', main='log(Total Trips)')
+hist(df$total_durations, xlab='', main='Total Durations'); hist(log(df$total_durations), xlab='', main='log(Total Durations)')
+hist(df$avg_durations, xlab='', main='Average Durations'); hist(log(df$avg_durations), xlab='', main='log(Average Durations)')
+```
+
+
+
+## Outliers
+
 
 # Methods/ Analysis
 ```{r plot predictors, echo=FALSE}
