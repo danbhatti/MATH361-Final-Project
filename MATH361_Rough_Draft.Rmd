@@ -19,6 +19,9 @@ library(ggplot2)
 library(patchwork)
 library(zoo)
 library(knitr)
+library(MASS)
+library(olsrr)
+library(leaps)
 ```
 
 # Introduction
@@ -262,7 +265,7 @@ testmodel3 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F
 #Suddenly temperature is not significant
 
 
-#powerTransform(cbind(df$total_trips,df$Mean_Temperature_F,df$#Mean_Humidity,df$MeanDew_Point_F,df$Precipitation_In,df$Mean_#Wind_Speed_MPH,df$Mean_Visibility_Miles))
+powerTransform(cbind(df$total_trips,df$Mean_Temperature_F,df$Mean_Humidity,df$MeanDew_Point_F,(df$Precipitation_In+1),(df$Mean_Wind_Speed_MPH+1),df$Mean_Visibility_Miles))
 
 #This fails as powerTransform needs arguments to be strictly positive and the min
 #of Precipitation and Wind speed are 0
@@ -289,13 +292,168 @@ transform_out <- lm(total_trips_trans ~ Mean_Temperature_F_trans + Mean_Humidity
 
 partialmodel3 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Max_Temperature_F, data = df)
 
-#Best model
+#2nd best model
 
 partialmodel4 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Max_Temperature_F+temp_range, data = df)
 
 fullmodel2 = lm(total_trips ~ Mean_Temperature_F + Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+Mean_Visibility_Miles+Mean_Sea_Level_Pressure_In, data = df)
 
+vif(partialmodel3)
+
+cor(df[, c("Mean_Humidity", "MeanDew_Point_F", "Max_Temperature_F", "temp_range")])
+
 anova(partialmodel,fullmodel2)
+
+df_clean <- na.omit(df)
+
+fullmodel <- lm(total_trips ~ Max_Temperature_F + Mean_Temperature_F + Min_TemperatureF + Max_Dew_Point_F +
+                  MeanDew_Point_F + Min_Dewpoint_F + Max_Humidity + Mean_Humidity + Min_Humidity +
+                  Max_Sea_Level_Pressure_In + Mean_Sea_Level_Pressure_In +
+                  Min_Sea_Level_Pressure_In + Max_Visibility_Miles + Mean_Visibility_Miles +
+                  Min_Visibility_Miles + Max_Wind_Speed_MPH + Mean_Wind_Speed_MPH +
+                  Max_Gust_Speed_MPH + Events + Precipitation_In,
+                data = df)
+
+alias(fullmodel)
+
+nullmodel <- lm(total_trips ~ 1, data = df)
+
+
+stepAIC(nullmodel, direction = "forward", scope = list(lower = nullmodel, upper = fullmodel))
+
+forwardselectionmodel = lm(total_trips~Max_Temperature_F+Precipitation_In+Mean_Humidity
+                           +Mean_Wind_Speed_MPH+Mean_Sea_Level_Pressure_In+Min_Visibility_Miles
+                           +Max_Wind_Speed_MPH+Max_Humidity+Min_Dewpoint_F+Mean_Temperature_F, data=df)
+
+#Bad
+
+stepAIC(fullmodel, direction = "backward")
+
+backwardselectionmodel = lm(total_trips~ Max_Temperature_F+Mean_Temperature_F+Min_Dewpoint_F+Max_Humidity+Mean_Humidity+Mean_Sea_Level_Pressure_In
+                            +Max_Wind_Speed_MPH+Mean_Wind_Speed_MPH+Precipitation_In, data=df)
+
+#better but still worse than what we already have
+
+all_subsets <- regsubsets(total_trips ~ Max_Temperature_F + Mean_Temperature_F + Min_TemperatureF + 
+                            Max_Dew_Point_F + MeanDew_Point_F + Min_Dewpoint_F + Max_Humidity +
+                            Mean_Humidity + Min_Humidity + Max_Sea_Level_Pressure_In + 
+                            Mean_Sea_Level_Pressure_In + Min_Sea_Level_Pressure_In + 
+                            Max_Visibility_Miles + Mean_Visibility_Miles + Min_Visibility_Miles +
+                            Max_Wind_Speed_MPH + Mean_Wind_Speed_MPH + Max_Gust_Speed_MPH + 
+                            Events + Precipitation_In, 
+                          data = df, nvmax = 10)  # nvmax specifies max number of predictors
+
+# View a summary of the results
+summary(all_subsets)
+
+# Extract the summary
+subsets_summary <- summary(all_subsets)
+
+# Display key metrics
+subsets_summary$adjr2  # Adjusted R^2 for each model
+subsets_summary$bic    # BIC for each model
+subsets_summary$cp     # Mallow's Cp for each model
+
+best_adj_r2_index <- which.max(subsets_summary$adjr2)
+cat("Best model by Adjusted R^2 is Model", best_adj_r2_index, "with Adjusted R^2:", max(subsets_summary$adjr2), "\n")
+
+best_bic_index <- which.min(subsets_summary$bic)
+cat("Best model by BIC is Model", best_bic_index, "with BIC:", min(subsets_summary$bic), "\n")
+
+# View variables for the best model (by Adjusted R^2 as an example)
+subsets_summary$outmat[best_adj_r2_index, ]
+
+partialmodel5 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = df)
+
+#This model does not have issues with multicolinearity
+
+df$Event_Binary <- ifelse(!is.na(df$Events), 1, 0)
+
+eventout = lm(total_trips~Event_Binary, data =df)
+
+fullmodelevent <- lm(total_trips ~ Max_Temperature_F + Mean_Temperature_F + Min_TemperatureF + Max_Dew_Point_F +
+                  MeanDew_Point_F + Min_Dewpoint_F + Max_Humidity + Mean_Humidity + Min_Humidity +
+                  Max_Sea_Level_Pressure_In + Mean_Sea_Level_Pressure_In +
+                  Min_Sea_Level_Pressure_In + Max_Visibility_Miles + Mean_Visibility_Miles +
+                  Min_Visibility_Miles + Max_Wind_Speed_MPH + Mean_Wind_Speed_MPH +
+                  Max_Gust_Speed_MPH + Precipitation_In+Event_Binary,
+                data = df)
+
+stepAIC(nullmodel, direction = "forward", scope = list(lower = nullmodel, upper = fullmodelevent))
+
+stepAIC(fullmodelevent, direction = "backward")
+
+all_subsetsevent <- regsubsets(total_trips ~ Max_Temperature_F + Mean_Temperature_F + Min_TemperatureF + 
+                            Max_Dew_Point_F + MeanDew_Point_F + Min_Dewpoint_F + Max_Humidity +
+                            Mean_Humidity + Min_Humidity + Max_Sea_Level_Pressure_In + 
+                            Mean_Sea_Level_Pressure_In + Min_Sea_Level_Pressure_In + 
+                            Max_Visibility_Miles + Mean_Visibility_Miles + Min_Visibility_Miles +
+                            Max_Wind_Speed_MPH + Mean_Wind_Speed_MPH + Max_Gust_Speed_MPH + 
+                            Event_Binary + Precipitation_In, 
+                          data = df, nvmax = 10)
+
+# Get the summary of the regsubsets output
+subset_summary <- summary(all_subsetsevent)
+
+# Extract metrics
+rsquared <- subset_summary$rsq
+adj_r_squared <- subset_summary$adjr2
+bic <- subset_summary$bic
+cp <- subset_summary$cp
+
+# View the metrics
+print(rsquared)
+print(adj_r_squared)
+print(bic)
+print(cp)
+
+# Best model by BIC (minimum value)
+best_bic_model <- which.min(bic)
+
+# Best model by adjusted R^2 (maximum value)
+best_adjr2_model <- which.max(adj_r_squared)
+
+# Best model by Cp (closest to the number of predictors)
+best_cp_model <- which.min(abs(cp - subset_summary$np))
+
+# Print the results
+cat("Best model by BIC:", best_bic_model, "\n")
+cat("Best model by Adjusted R^2:", best_adjr2_model, "\n")
+cat("Best model by Cp:", best_cp_model, "\n")
+
+
+# Extract coefficients for the best model (e.g., by BIC)
+best_model_coeffs <- coef(all_subsetsevent, id = best_bic_model)
+
+# View the coefficients
+print(best_model_coeffs)
+
+#Final model (best model)
+
+modela = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH, data = df)
+
+modelb = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+log(Precipitation_In+0.0001)+log(Mean_Wind_Speed_MPH+0.0001), data = df)
+
+df$PrecipitationDummy <- ifelse(df$Precipitation_In > 0, 1, 0)
+
+modelc = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+PrecipitationDummy+Mean_Wind_Speed_MPH, data = df)
+
+df$EventsDummy <- ifelse(is.na(df$Events), 0, 1)
+
+modeld = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Mean_Wind_Speed_MPH+EventsDummy, data = df)
+
+df$RainDummy = ifelse(grepl("Rain", df$Events, fixed = TRUE), 1, 0)
+
+modele= lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+RainDummy+Mean_Wind_Speed_MPH, data = df)
+
+numeric_vars <- df[sapply(df, is.numeric)]
+
+# Compute the correlation matrix
+correlation_table <- cor(numeric_vars, use = "complete.obs")
+
+# View the correlation table
+print(correlation_table)
+
 
 ```
 
