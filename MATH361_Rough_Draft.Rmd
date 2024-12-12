@@ -48,7 +48,7 @@ unique_dates <- sort(unique(trip$date)) # this collects unique dates
 date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates)) # this maps unique date to the integers, starting at 1
 trip$day_number = date_to_number[as.character(trip$date)] # this adds the integer mapping as a column, day_number
 trip$count = 1 # this adds a one to each obs; useful for add
-trip = select(trip, count, tripduration, day_number)
+trip = dplyr::select(trip, count, tripduration, day_number)
 
 # construct new df, ridership, that aggregates trips by day
 ridership = trip %>% group_by(day_number) %>%
