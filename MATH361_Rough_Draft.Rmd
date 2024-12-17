@@ -25,14 +25,14 @@ library(leaps)
 ```
 
 # Introduction
-Cycle share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of cycle share was Pronto! based in Seattle, Washington. From 2014 to 2017, 500 Pronto! bikes operated across 54 stations in Seattle’s downtown. The City of Seattle, in partnership with Socratica, collected system data during the operating window and provided it to the public via its open data platform. Pronto fell short of the success realized by other bike schemes in the U.S. like Capitol Bikes, Philly’s Indego, and NYC’s CitiBike. Researchers have used system data to conduct a post-mortem on Pronto! as dockless bike share schemes filled the void (2). In this paper, we will investigate the relationship between weather in the service area and daily ridership. In particular, we want to predict daily ridership based on the weather data.
+Cycle share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of cycle share was Pronto! based in Seattle, Washington. From 2014 to 2017, 500 Pronto! bikes operated across 54 stations in Seattle’s downtown. The City of Seattle, in partnership with Socratica, collected system data during the operating window and provided it to the public via its open data platform. Pronto fell short of the success realized by other bike schemes in the U.S. like Capitol Bikes, Philly’s Indego, and NYC’s CitiBike. Researchers have used system data to conduct a post-mortem on Pronto! as dockless bike share schemes like Lime Scooters filled the void left by Pronto (2). In this paper, we will investigate the relationship between weather in the service area and daily ridership. In particular, we want to predict daily ridership based on the weather data.
 
-The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains data on each trip from 13 October 2014 to 31 March 2017, or 901 days. Each case in this dataset is a trip, and there were 275,091 trips over the 901 days. The relevant variables from the original 12 in this dataset are the response variables \texttt{start\_time} and \texttt{trip\_duration}. In the file \texttt{weather.csv.xls}, a single case corresponds to a single day. This file contains the weather data for each day from 13 October 2014 to 31 August 2016, or 689 days. That is, the dates covered by the weather data are a proper subset of the dates covered by the trip data. After merging these data and creating some of our own variables, we move on to exploratory data analysis for the response variables and predictors. This exploration informs our choice for our final model.
+The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains data on each trip from 13 October 2014 to 31 March 2017, or 901 days. Each case in this dataset is a trip, and there were 275,091 trips over the 901 days. The relevant variables from the original 12 in this dataset are the response variables \texttt{start\_time} (day and time trip started, in PST) and \texttt{trip\_duration} (time of trip in seconds). In the file \texttt{weather.csv.xls}, a single case corresponds to a single day. This file contains the weather data for each day from 13 October 2014 to 31 August 2016, or 689 days. That is, the dates covered by the weather data set are a proper subset of the dates covered by the trip data set. After merging these data and creating some of our own variables, we move on to exploratory data analysis for the response variables and predictors. This exploration informs our choice for our final model.
 
 [INSERT PARAGRAPH SUMMARIZING CONCLUSIONS FROM THE RESEARCH]
 
 
-```{r, echo=FALSE, fig.cap = "PRETTY FIGURE", out.width = "50%"}
+```{r, include=FALSE, fig.cap = "PRETTY FIGURE", out.width = "50%"}
 knitr::include_graphics("pronto.png")
 ```
 
@@ -189,10 +189,12 @@ legend("topright", legend = c(expression(Sigma ~ "Riders"), expression(Sigma ~ "
 
 ```
 
-36 days earlier on Sunday, March 15, 2015 was the second-wettest March day on record in the Puget Sound Region (SOURCE). The rain was so severe that a mudslide occured in Western Seattle. Knowing this, you'd expect March 15 to have been a bad day for cycling. Only 34 trips took place on this day with a combined ride duration of just 6.3 hours. This was the second worst day for cycling behind Sunday, December 27, 2015 with just 30 trips and 4.5 hours. The coincidence between trips and durations explains the flattening of the data -- the decline in variation from the mean -- once we compute the average ride durations per day. We choose to skip a visualization of the average each day to visualizing the normality of the data.
+36 days earlier on Sunday, March 15, 2015 was the second-wettest March day on record in the Puget Sound Region (SOURCE). The rain was so severe that a mudslide occured in Western Seattle. Knowing this, you'd expect March 15 to have been a bad day for cycling. Only 34 trips took place on this day with a combined ride duration of just 6.3 hours. This was the second worst day for cycling behind Sunday, December 27, 2015 with just 30 trips and 4.5 hours. The coincidence between trips and durations explains the flattening of the data -- the decline in variation from the mean -- once we compute the average ride durations per day. We choose to skip a visualization of the average each day to visualizing the normality of the data. 
+
+We note (i) that \texttt{total\_trips} and \texttt{total\_durations} are highly correlated (>0.82), (ii) that average durations is bimodal, total durations is right-skewed, and total trips is roughly normal, and (iii) total durations makes for the easiest interpretation without being transformed. We therefore use \texttt{total\_trips} as our response variable going forward. 
 
 
-```{r plot_hist, echo = FALSE}
+```{r plot_normal_histograms, echo = FALSE}
 par(mfrow = c(3, 2),       # Create a 3x2 grid
     mar = c(2, 2, 2, 1),   # Reduce margins around individual plots (bottom, left, top, right)
     oma = c(4, 4, 2, 2))   # Set outer margins for the entire figure
@@ -202,8 +204,59 @@ hist(df$total_durations, xlab='', main='Total Durations'); hist(log(df$total_dur
 hist(df$avg_durations, xlab='', main='Average Durations'); hist(log(df$avg_durations), xlab='', main='log(Average Durations)')
 ```
 
+```{r plot exploratory table, echo = FALSE}
+# Create a new data frame with grouped features
+compact_correlations <- data.frame(
+  Feature = c("Temperature (°F)", "Visibility (miles)", "Dew Point (°F)", "Humidity (%)", "Sea Level Pressure (in)"),
+  Min = c(
+    round(cor(df$Min_TemperatureF, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Min_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Min_Dewpoint_F, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Min_Humidity, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Min_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 4)
+  ),
+  Mean = c(
+    round(cor(df$Mean_Temperature_F, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Mean_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$MeanDew_Point_F, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Mean_Humidity, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Mean_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 4)
+  ),
+  Max = c(
+    round(cor(df$Max_Temperature_F, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Max_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Max_Dew_Point_F, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Max_Humidity, df$total_trips, use = 'na.or.complete'), 4),
+    round(cor(df$Max_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 4)
+  )
+)
 
+# Create a table
+knitr::kable(compact_correlations, caption = "Correlation between Weather Features and Total Trips")
 
+```
+```{r wind cor plots, echo = FALSE}
+# Wind plots
+par(mfrow=c(1,3)) # Set the layout for 3 plots in a single row
+# Left-most plot
+par(mar=c(5, 4, 4, 0.5)) # Bottom, Left, Top, Right margins
+plot(df$Max_Wind_Speed_MPH, df$total_trips, 
+     xlab="Max Wind Speed (MPH)", 
+     ylab="Total Rides", 
+     sub=paste("cor(x,y) =", round(cor(df$Max_Wind_Speed_MPH, df$total_trips, use='na.or.complete'), 4)))
+# Middle plot 
+par(mar=c(5, 2.25, 4, 2.25)) # Reduce left margin
+plot(df$Mean_Wind_Speed_MPH, df$total_trips, 
+     xlab="Mean Wind Speed (MPH)", 
+     ylab="", 
+     sub=paste("cor(x,y) =", round(cor(df$Mean_Wind_Speed_MPH, df$total_trips, use='na.or.complete'), 4)))
+# Right-most plot
+par(mar=c(5, 0.5, 4, 4)) # Reduce left margin
+plot(df$Max_Gust_Speed_MPH, df$total_trips, 
+     xlab="Max Gust Speed (MPH)", 
+     ylab="", 
+     sub=paste("cor(x,y) =", round(cor(df$Max_Gust_Speed_MPH, df$total_trips, use='na.or.complete'), 4)))
+```
 ## Outliers
 
 
@@ -378,7 +431,7 @@ alias(fullmodel)
 nullmodel <- lm(total_trips ~ 1, data = df)
 
 
-stepAIC(nullmodel, direction = "forward", scope = list(lower = nullmodel, upper = fullmodel))
+#stepAIC(nullmodel, direction = "forward", scope = list(lower = nullmodel, upper = fullmodel))
 
 forwardselectionmodel = lm(total_trips~Max_Temperature_F+Precipitation_In+Mean_Humidity
                            +Mean_Wind_Speed_MPH+Mean_Sea_Level_Pressure_In+Min_Visibility_Miles
@@ -386,7 +439,7 @@ forwardselectionmodel = lm(total_trips~Max_Temperature_F+Precipitation_In+Mean_H
 
 #Bad
 
-stepAIC(fullmodel, direction = "backward")
+#stepAIC(fullmodel, direction = "backward")
 
 backwardselectionmodel = lm(total_trips~ Max_Temperature_F+Mean_Temperature_F+Min_Dewpoint_F+Max_Humidity+Mean_Humidity+Mean_Sea_Level_Pressure_In
                             +Max_Wind_Speed_MPH+Mean_Wind_Speed_MPH+Precipitation_In, data=df)
@@ -438,9 +491,9 @@ fullmodelevent <- lm(total_trips ~ Max_Temperature_F + Mean_Temperature_F + Min_
                   Max_Gust_Speed_MPH + Precipitation_In+Event_Binary,
                 data = df)
 
-stepAIC(nullmodel, direction = "forward", scope = list(lower = nullmodel, upper = fullmodelevent))
+#stepAIC(nullmodel, direction = "forward", scope = list(lower = nullmodel, upper = fullmodelevent))
 
-stepAIC(fullmodelevent, direction = "backward")
+#stepAIC(fullmodelevent, direction = "backward")
 
 all_subsetsevent <- regsubsets(total_trips ~ Max_Temperature_F + Mean_Temperature_F + Min_TemperatureF + 
                             Max_Dew_Point_F + MeanDew_Point_F + Min_Dewpoint_F + Max_Humidity +
