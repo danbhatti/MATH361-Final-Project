@@ -25,9 +25,9 @@ library(leaps)
 ```
 
 # Introduction
-Cycle share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of cycle share was Pronto! based in Seattle, Washington. From 2014 to 2017, 500 Pronto! bikes operated across 54 stations in Seattle’s downtown. The City of Seattle, in partnership with Socratica, collected system data during the operating window and provided it to the public via its open data platform. Pronto fell short of the success realized by other bike schemes in the U.S. like Capitol Bikes, Philly’s Indego, and NYC’s CitiBike. Researchers have used system data to conduct a post-mortem on Pronto! as dockless bike share schemes like Lime Scooters filled the void left by Pronto (2). In this paper, we will investigate the relationship between weather in the service area and daily ridership. In particular, we want to predict daily ridership based on the weather data.
+Cycle share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of cycle share  was Pronto! in downtown Seattle, Washington. From 2014 to 2017, 500 Pronto! bikes operated across 54 stations on the ithsmus. The City of Seattle, in partnership with Socratica, collected system data during the operating window and made it public via its open data platform. Pronto! fell short of the success realized by other bike schemes in the U.S. like Capital Bikeshare, Philly’s Indego, and NYC’s CitiBike. Researchers have used system data to conduct a post-mortem analysis on Pronto! as dockless bike share schemes like Lime Scooters filled the void left by Pronto (2). In this paper, we will investigate the relationship between weather in the service area and daily ridership. In particular, we want to predict daily ridership based on the weather data.
 
-The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains data on each trip from 13 October 2014 to 31 March 2017, or 901 days. Each case in this dataset is a trip, and there were 275,091 trips over the 901 days. The relevant variables from the original 12 in this dataset are the response variables \texttt{start\_time} (day and time trip started, in PST) and \texttt{trip\_duration} (time of trip in seconds). In the file \texttt{weather.csv.xls}, a single case corresponds to a single day. This file contains the weather data for each day from 13 October 2014 to 31 August 2016, or 689 days. That is, the dates covered by the weather data set are a proper subset of the dates covered by the trip data set. After merging these data and creating some of our own variables, we move on to exploratory data analysis for the response variables and predictors. This exploration informs our choice for our final model.
+The data were downloaded from Kaggle (3). The file \texttt{trip.csv} contains data on each trip from 13 October 2014 to 31 March 2017, or 901 days. Each case in this dataset is a trip, and there were 275,091 trips over the 901 days. The relevant variables from the original 12 in this dataset are the response variables \texttt{start\_time} (day and time trip started, in PST) and \texttt{trip\_duration} (time of trip in seconds). In the file \texttt{weather.csv.xls}, a single case corresponds to a single day. This file contains the weather data for each day from 13 October 2014 to 31 August 2016, or 689 days. That is, the dates covered by the \texttt{weather} data set are a proper subset of the dates covered by the \texttt{trip} data set. Each day has 21 variables describing its weather. After merging these data sets and creating some of our own variables, we move on to exploratory data analysis for the response variables and predictors. This exploration informed our choice for our final model.
 
 [INSERT PARAGRAPH SUMMARIZING CONCLUSIONS FROM THE RESEARCH]
 
@@ -76,11 +76,8 @@ df = left_join(weather,ridership, by='day_number'); dim(df)
 df$avg_durations = df$total_durations / df$total_trips
 ```
 
-The \texttt{trip} data frame contains 175,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames. We began by aggregating trip data for each day we have data for. 
 
-From the \texttt{trip} data frame, we selected only two variables: \texttt{start\_time} and \texttt{tripduration}. We stripped the date from the \texttt{start\_time} (encoded in the format \texttt{\%m/\%d/\%Y \%H:\%M}), collected the unique dates, and mapped unique dates to the natural numbers. The mapping was represented by a new variable called \texttt{day\_number}. Now, each trip has a duration \texttt{tripduration}, a trip \texttt{count} (1), and a \texttt{day\_number} (ranging from 1 to 689). From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}.
-
-From the \texttt{weather} data frame, we used the mapping created for the \texttt{trip} data set to map unique dates to the natural numbers. We also created a new variable, \texttt{temp\_range}, by computing the difference between \texttt{Max\_Temperature\_F} and \texttt{Min\_TemperatureF} for each day. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 25 columns (variables). The variable names are listed in a table below with brief descriptions.
+The \texttt{trip} data frame contains 275,091 cases (or rides) and 12 variables describing each ride. The weather data frame contains 689 cases (or days) and 21 variables describing the weather that day. Ultimately, our goal is to join these two data frames. We began by aggregating trip data for each day we have data for. From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 25 columns (variables). The variable names are listed in a table below with brief descriptions.
 
 ```{r rtable, echo = FALSE}
 # Create a data frame with variable names and descriptions
@@ -129,6 +126,17 @@ variable_descriptions <- data.frame(
 knitr::kable(variable_descriptions, col.names = c("Variable", "Description"), caption = "Variable Descriptions (689 rows, 25 columns)")
 
 ```
+
+Notice that some variables in our data dictionary were created from others:
+\begin{itemize}
+\item \texttt{temp\_range} was created by the difference: \texttt{Max\_Temperature\_F} - \texttt{Min\_TemperatureF}
+\item \texttt{date} is in the format \texttt{"\%m/\%d/\%Y"}, because each trip was originally in the format \texttt{"\%m/\%d/\%Y \%H:\%M"}
+\item \texttt{day\_number} are the days since 12 October 2014, the first day of observation
+\item \texttt{total\_trips} are the total trips recorded for that day
+\item \texttt{total\_durations} are the total durations for all trips that day
+\item \texttt{avg\_durations} are the average durations for a trip each day
+\end{itemize}
+
 
 ## Selecting the Response Variable
 The three candidates for a good response variable were created from the ``trip.csv`` data set, described in the ``ridership`` data frame, and merged into our final data frame: ``total_trips``, ``trip_durations``, and ``avg_durations``. We briefly discuss the merits of each response variable before a quantitative judgement:
