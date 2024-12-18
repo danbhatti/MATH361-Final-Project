@@ -151,7 +151,7 @@ Notice that nine variables in our data dictionary were created from other variab
 \item \texttt{total\_trips} are the total trips recorded for that day
 \item \texttt{total\_durations} are the total durations for all trips that day, aggregating \texttt{tripduration}
 \item \texttt{avg\_durations} are the average durations for a trip each day, dividing the sum of trip durations by the total number of trips each day
-\item \texttt{weekday\_weekend}
+\item \texttt{weekday\_weekend} was created based on \texttt{date}, according to whether the day was a weekday or Saturday or Sunday.
 \item \texttt{season} was created based on \texttt{date}, according the the summer and winter solstices and the spring and fall equinoxes in the Northern hemisphere.
 \item \texttt{fall\_winter} was created based on whether the season was Fall or Winter, which roughly coincides with the wet season in the Puget Sound Region from October to April (SOURCE).
 \end{itemize}
@@ -671,6 +671,9 @@ partialmodel3 = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+
 
 
 veryfinalmodel = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+fall_winter+weekday_weekend, data = df)
+
+summary(veryfinalmodel)
+
 #regression summary of the final model
 #summary(partialmodel3)
 
@@ -684,7 +687,7 @@ plot(veryfinalmodel)
 
 The equation for our final regression model is:
 
-  \texttt{total\_trips} = 277.1643 – 4.95(\texttt{Mean\_Humidity}) + 5.90(\texttt{MeanDew\_Point}) – 118.151(\texttt{Precipitation\_In}) – 7.91(\texttt{Mean\_Wind\_Speed}) + 2.94(\texttt{Max\_Temperature})
+  \texttt{total\_trips} = 485.34 – 6.20(\texttt{Mean\_Humidity}) + 8.10(\texttt{MeanDew\_Point}) – 103.49(\texttt{Precipitation\_In}) – 8.85(\texttt{Mean\_Wind\_Speed}) - 34.11(\texttt{fall\_winter}) - 50.23(\texttt{Weekend}) 
 
 Each regressor is significant to at least the 0.01 level, and the diagnostic plots are satisfactory. The residual plot moving-average looks flat. The normal quantile plot has few departures from the line. The scale location plot is relatively flat, indicating constant variance across fitted values.
 
@@ -717,8 +720,17 @@ cor(df$total_durations, df$MeanDew_Point_F)
 ## Extensions
 
 
-Our work here suggests a path forward for bike share systems looking to bolster their operations and planning with weather data. However, Seattle is a city with temperate weather/climate. These results are not readily generalizable to all cities because when its too hot, people will also not ride bike!
-[INSERT PARAGRAPH SUMMARIZING CONCLUSIONS FROM THE RESEARCH]
+Our work here suggests a path forward for bike share systems looking to bolster their operations and planning with weather data. However, Seattle is a city with temperate weather/climate. These results are not readily generalizable to all cities because when its too hot, people will also not ride bikes!
+
+Based on our model on any given day, holding all else equal, for a 1% increase in the mean relative humidity we expect 6.2 fewer trips. For a 1 degree Fahrenheit increase in the mean dew point, we expect 8.1 more trips. For a 1 inch increase in precipitation we expect 103.5 fewer trips. For a one mile per hour increase in the mean wind speed, we expect 8.8 fewer trips. For a day in fall or winter we expect 34.1 fewer trips than in summer or spring. For a day that is a weekend, we expect 50.2 fewer trips than on a weekday.
+
+Rationalizing the signs of the coefficients, it makes sense for trips to drop as relative humidity rises, because higher a higher relative humidity is known to feel uncomfortable. It makes sense for trips to increase as the mean dew point increases, as a higher dew point generally coincides with warmer weather, which could make biking more comfortable. It makes sense that an increase in the inches of precipitation would decrease trips, as biking in rain or snow could be more dangerous and uncomfortable. The roads could be slippery and you could get soaking wet. It makes sense that an increase in the miles per hour of mean wind speed would decrease ridership, as faster winds increase wind chill which feels very uncomfortable, and biking into headwinds is tiresome. It makes sense that ridership decreases in the fall and winter, as this is when days are shorter, when Seattle's rainy season starts, and when the leaves fall, potentially making it so that biking is slippery and less scenic. Lastly, an explanation for why ridership drops on the weekend is that many people likely used Pronto to get to work, which would not happen on the weekends.
+
+
+In terms of limitations, as stated before, given that the climate of Seattle is different from many other cities, our results will have limited generalizability. Another limitation is that the weather data is for all of the Puget sound region, while the biking data is concentrated in downtown Seattle. If the weather data was specialized to the city itself, we may see the weather data have higher explanatory power. Lastly, one limitation is that two of are variables, mean humidity and mean dew point, are mathematically related, which could be cause for concern. The reason that this relationship doesn't affect the regression model is that they are not \textit{linearly} related.
+
+Some possible extensions of our work here could be analyzing the relationships between weather and ridership in different cities. We might see different relationships between the weather and ridership in cities that have different climates than Seattle, for instance, Houston, Texas. Another potential extension would be to use interaction terms, and create a dummy variable for holidays, like a 2018 paper by Kyoungok Kim did. 
+
 
 
 
