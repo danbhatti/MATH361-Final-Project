@@ -282,16 +282,7 @@ plot(df$Max_Gust_Speed_MPH, df$total_trips,
 
 
 # Methods/ Analysis
-```{r plot predictors, echo=FALSE}
-par(mfrow=c(2,2), mai = c(1,0.1,0.1,0.1))
-plot(df$Precipitation_In,df$total_trips, xlab = "Precipitation (in)"); abline(reg = lm(df$total_trips ~ df$Precipitation_In), col = 'red')
 
-plot(df$Mean_Temperature_F,df$total_trips, xlab = "Mean Temperature (°F)"); abline(reg = lm(df$total_trips ~ df$Mean_Temperature_F), col = 'red')
-
-plot(df$Mean_Humidity,df$total_trips, xlab = "Mean Humidity (%)"); abline(reg = lm(df$total_trips ~ df$Mean_Humidity), col = 'red')
-
-plot(df$Mean_Wind_Speed_MPH, df$total_trips, xlab = "Mean Wind Speed (MPH)"); abline(reg = lm(df$total_trips ~ df$Mean_Wind_Speed_MPH), col = 'red')
-```
 
 ```{r plot diag plots, echo=FALSE}
 out = lm(total_trips ~ Mean_Temperature_F, data = df)
@@ -301,9 +292,9 @@ out = lm(total_trips ~ Mean_Temperature_F, data = df)
 #Adjusted R^2 is 0.5612
 
 outHum = lm(total_trips ~ Mean_Humidity, data = df)
-par(mfrow=c(2,2))
-plot(outHum)
-summary(outHum)
+#par(mfrow=c(2,2))
+#plot(outHum)
+#summary(outHum)
 #Diagnostic plots look incredible. Adj R^2 = 0.4611
 
 outRain = lm(total_trips ~ Precipitation_In, data = df)
@@ -643,7 +634,7 @@ pairs(~Mean_Humidity + MeanDew_Point_F + Precipitation_In + Mean_Wind_Speed_MPH 
 Our work here suggests a path forward for bike share systems looking to bolster their operations and planning with weather data. However, Seattle is a city with temperate weather/climate. These results are not readily generalizable to all cities because when its too hot, people will also not ride bike!
 
 
-
+# Appendix
 ```{r mapping copy, eval=FALSE}
 trip = read_csv('pronto-cycle-share-trip-data.csv')
 # map unique dates to integers starting at 1
