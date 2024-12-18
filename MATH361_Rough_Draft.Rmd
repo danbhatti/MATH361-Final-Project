@@ -22,6 +22,7 @@ library(knitr)
 library(MASS)
 library(olsrr)
 library(leaps)
+library(lubridate)
 ```
 
 # Introduction
@@ -577,6 +578,34 @@ correlation_table <- cor(numeric_vars, use = "complete.obs")
 
 # View the correlation table
 print(correlation_table)
+
+df$weekday_weekend <- ifelse(weekdays(df$date) %in% c("Saturday", "Sunday"), 1, 0)
+
+# Define a function to classify seasons based on actual start dates
+get_season <- function(date) {
+  year <- lubridate::year(date)
+  spring_start <- as.Date(paste0(year, "-03-20"))
+  summer_start <- as.Date(paste0(year, "-06-21"))
+  fall_start   <- as.Date(paste0(year, "-09-22"))
+  winter_start <- as.Date(paste0(year, "-12-21"))
+  
+  ifelse(date >= spring_start & date < summer_start, 0,  # Spring
+  ifelse(date >= summer_start & date < fall_start,   1,  # Summer
+  ifelse(date >= fall_start & date < winter_start,   2,  # Fall
+  3)))  # Winter
+}
+
+# Apply the function to the 'date' variable
+df$season <- sapply(df$date, get_season)
+
+# Create fall/winter dummy: 1 if Fall or Winter, 0 otherwise
+df$fall_winter_dummy <- ifelse(df$season %in% c(2, 3), 1, 0)
+
+outggg = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+factor(season)+weekday_weekend, data = df)
+
+#actual last model
+
+veryfinalmodel = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+fall_winter_dummy+weekday_weekend, data = df)
 
 
 ```
