@@ -54,7 +54,7 @@ trip = dplyr::select(trip, count, tripduration, day_number)
 # construct new df, ridership, that aggregates trips by day
 ridership = trip %>% group_by(day_number) %>%
   summarise(total_trips = sum(count),
-            total_durations = sum(tripduration),
+            total_durations = round(sum(tripduration),1),
             .groups = 'drop'); dim(ridership)
 ```
 
@@ -74,7 +74,7 @@ weather = weather[,-1] # remove the old date
 # this will be our data frame going forward
 df = left_join(weather,ridership, by='day_number'); dim(df)
 
-df$avg_durations = df$total_durations / df$total_trips
+df$avg_durations = round(df$total_durations / df$total_trips, 1)
 
 write.csv(df, "cleaned_data.csv", row.names = FALSE)
 ```
@@ -664,7 +664,7 @@ Our work here suggests a path forward for bike share systems looking to bolster 
 
 
 # Appendix
-```{r mapping copy, eval=FALSE}
+```{r mapping 1 copy, eval=FALSE}
 trip = read_csv('pronto-cycle-share-trip-data.csv')
 # map unique dates to integers starting at 1
 # strips the date from its current format
@@ -676,11 +676,13 @@ date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
 trip$day_number = date_to_number[as.character(trip$date)] 
 trip$count = 1 # this adds a one to each obs; useful for add
 trip = dplyr::select(trip, count, tripduration, day_number)
+```
 
+```{r mapping 2 copy, eval=FALSE}
 # construct new df, ridership, that aggregates trips by day
 ridership = trip %>% group_by(day_number) %>%
   summarise(total_trips = sum(count),
-            total_durations = sum(tripduration),
+            total_durations = round(sum(tripduration), 1),
             .groups = 'drop'); dim(ridership)
 ```
 
@@ -696,6 +698,6 @@ weather$day_number = date_to_number[as.character(weather$date)]
 weather = weather[,-1] # remove the old date
 # this will be our data frame going forward
 df = left_join(weather,ridership, by='day_number'); dim(df)
-df$avg_durations = df$total_durations / df$total_trips
+df$avg_durations = round(df$total_durations / df$total_trips, 1)
 ```
 
