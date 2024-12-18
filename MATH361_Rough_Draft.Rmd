@@ -74,6 +74,8 @@ weather = weather[,-1] # remove the old date
 df = left_join(weather,ridership, by='day_number'); dim(df)
 
 df$avg_durations = df$total_durations / df$total_trips
+
+write.csv(df, "cleaned_data.csv", row.names = FALSE)
 ```
 
 
