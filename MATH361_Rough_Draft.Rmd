@@ -96,15 +96,15 @@ variable_descriptions <- data.frame(
     "total_trips", "total_durations", "average_durations"
   ),
   Description = c(
-    "Maximum temperature in Fahrenheit recorded that day",
-    "Mean temperature in Fahrenheit recorded that day",
-    "Minimum temperature in Fahrenheit recorded that day",
-    "Maximum dew point in Fahrenheit recorded that day",
-    "Mean dew point in Fahrenheit recorded that day",
-    "Minimum dew point in Fahrenheit recorded that day",
-    "Maximum humidity percentage recorded that day",
-    "Mean humidity percentage recorded that day",
-    "Minimum humidity percentage recorded that day",
+    "Maximum temperature (°F) recorded that day",
+    "Mean temperature (°F) recorded that day",
+    "Minimum temperature (°F) recorded that day",
+    "Maximum dew point (°F) recorded that day",
+    "Mean dew point (°F) recorded that day",
+    "Minimum dew point (°F) recorded that day",
+    "Maximum humidity (%) recorded that day",
+    "Mean humidity (%) recorded that day",
+    "Minimum humidity (%) recorded that day",
     "Maximum sea-level pressure in inches recorded that day",
     "Mean sea-level pressure in inches recorded that day",
     "Minimum sea-level pressure in inches recorded that day",
@@ -209,25 +209,25 @@ hist(df$avg_durations, xlab='', main='Average Durations'); hist(log(df$avg_durat
 compact_correlations <- data.frame(
   Feature = c("Temperature (°F)", "Visibility (miles)", "Dew Point (°F)", "Humidity (%)", "Sea Level Pressure (in)"),
   Min = c(
-    round(cor(df$Min_TemperatureF, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Min_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Min_Dewpoint_F, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Min_Humidity, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Min_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 4)
+    round(cor(df$Min_TemperatureF, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Min_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Min_Dewpoint_F, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Min_Humidity, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Min_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 3)
   ),
   Mean = c(
-    round(cor(df$Mean_Temperature_F, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Mean_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$MeanDew_Point_F, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Mean_Humidity, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Mean_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 4)
+    round(cor(df$Mean_Temperature_F, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Mean_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$MeanDew_Point_F, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Mean_Humidity, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Mean_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 3)
   ),
   Max = c(
-    round(cor(df$Max_Temperature_F, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Max_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Max_Dew_Point_F, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Max_Humidity, df$total_trips, use = 'na.or.complete'), 4),
-    round(cor(df$Max_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 4)
+    round(cor(df$Max_Temperature_F, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Max_Visibility_Miles, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Max_Dew_Point_F, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Max_Humidity, df$total_trips, use = 'na.or.complete'), 3),
+    round(cor(df$Max_Sea_Level_Pressure_In, df$total_trips, use = 'na.or.complete'), 3)
   )
 )
 
@@ -235,7 +235,11 @@ compact_correlations <- data.frame(
 knitr::kable(compact_correlations, caption = "Correlation between Weather Features and Total Trips")
 
 ```
-```{r wind cor plots, echo = FALSE}
+```{r wind cor plots, echo = FALSE, warning = FALSE}
+
+df$Max_Gust_Speed_MPH <- as.numeric(as.character(df$Max_Gust_Speed_MPH))
+
+
 # Wind plots
 par(mfrow=c(1,3)) # Set the layout for 3 plots in a single row
 # Left-most plot
@@ -243,19 +247,26 @@ par(mar=c(5, 4, 4, 0.5)) # Bottom, Left, Top, Right margins
 plot(df$Max_Wind_Speed_MPH, df$total_trips, 
      xlab="Max Wind Speed (MPH)", 
      ylab="Total Rides", 
-     sub=paste("cor(x,y) =", round(cor(df$Max_Wind_Speed_MPH, df$total_trips, use='na.or.complete'), 4)))
+     sub = paste0("cor(x,y) = ", 
+            round(cor(df$Max_Wind_Speed_MPH, df$total_trips, use = 'na.or.complete'), 3), 
+            " (n = ", 689 - sum(is.na(df$Max_Wind_Speed_MPH)),")"))
 # Middle plot 
 par(mar=c(5, 2.25, 4, 2.25)) # Reduce left margin
 plot(df$Mean_Wind_Speed_MPH, df$total_trips, 
      xlab="Mean Wind Speed (MPH)", 
      ylab="", 
-     sub=paste("cor(x,y) =", round(cor(df$Mean_Wind_Speed_MPH, df$total_trips, use='na.or.complete'), 4)))
+     sub = paste0("cor(x,y) = ", 
+            round(cor(df$Mean_Wind_Speed_MPH, df$total_trips, use = 'na.or.complete'), 3), 
+            " (n = ", 689 - sum(is.na(df$Mean_Wind_Speed_MPH)),")"))
 # Right-most plot
 par(mar=c(5, 0.5, 4, 4)) # Reduce left margin
 plot(df$Max_Gust_Speed_MPH, df$total_trips, 
      xlab="Max Gust Speed (MPH)", 
      ylab="", 
-     sub=paste("cor(x,y) =", round(cor(df$Max_Gust_Speed_MPH, df$total_trips, use='na.or.complete'), 4)))
+     sub = paste0("cor(x,y) = ", 
+            round(cor(df$Max_Gust_Speed_MPH, df$total_trips, use = 'na.or.complete'), 3), 
+            " (n = ", 689 - sum(is.na(df$Max_Gust_Speed_MPH)),")"))
+
 ```
 ## Outliers
 
@@ -265,7 +276,7 @@ plot(df$Max_Gust_Speed_MPH, df$total_trips,
 par(mfrow=c(2,2), mai = c(1,0.1,0.1,0.1))
 plot(df$Precipitation_In,df$total_trips, xlab = "Precipitation (in)"); abline(reg = lm(df$total_trips ~ df$Precipitation_In), col = 'red')
 
-plot(df$Mean_Temperature_F,df$total_trips, xlab = "Mean Temperature (F)"); abline(reg = lm(df$total_trips ~ df$Mean_Temperature_F), col = 'red')
+plot(df$Mean_Temperature_F,df$total_trips, xlab = "Mean Temperature (°F)"); abline(reg = lm(df$total_trips ~ df$Mean_Temperature_F), col = 'red')
 
 plot(df$Mean_Humidity,df$total_trips, xlab = "Mean Humidity (%)"); abline(reg = lm(df$total_trips ~ df$Mean_Humidity), col = 'red')
 
@@ -621,7 +632,40 @@ pairs(~Mean_Humidity + MeanDew_Point_F + Precipitation_In + Mean_Wind_Speed_MPH 
 # Conclusion
 Our work here suggests a path forward for bike share systems looking to bolster their operations and planning with weather data. However, Seattle is a city with temperate weather/climate. These results are not readily generalizable to all cities because when its too hot, people will also not ride bike!
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
+
+```{r mapping copy, eval=FALSE}
+trip = read_csv('pronto-cycle-share-trip-data.csv')
+# map unique dates to integers starting at 1
+# strips the date from its current format
+trip$date <- as.Date(trip$starttime, format = "%m/%d/%Y %H:%M") 
+unique_dates <- sort(unique(trip$date)) # this collects unique dates
+# this maps unique date to the integers, starting at 1
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates)) 
+# this adds the integer mapping as a column, day_number
+trip$day_number = date_to_number[as.character(trip$date)] 
+trip$count = 1 # this adds a one to each obs; useful for add
+trip = dplyr::select(trip, count, tripduration, day_number)
+
+# construct new df, ridership, that aggregates trips by day
+ridership = trip %>% group_by(day_number) %>%
+  summarise(total_trips = sum(count),
+            total_durations = sum(tripduration),
+            .groups = 'drop'); dim(ridership)
+```
+
+```{r clean_data copy, eval = FALSE}
+weather = read_csv('weather.csv.xls')
+# calculates temperature range for each day
+weather$temp_range = weather$Max_Temperature_F - weather$Min_TemperatureF 
+# strips the date from its current format
+weather$date <- as.Date(weather$Date, format = "%m/%d/%Y") 
+# maps unique date to the integers, like the chunk above
+date_to_number <- setNames(seq_along(unique_dates), as.character(unique_dates))
+weather$day_number = date_to_number[as.character(weather$date)]
+weather = weather[,-1] # remove the old date
+# this will be our data frame going forward
+df = left_join(weather,ridership, by='day_number'); dim(df)
+df$avg_durations = df$total_durations / df$total_trips
+```
 
