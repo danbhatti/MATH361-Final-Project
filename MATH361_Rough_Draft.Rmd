@@ -686,7 +686,38 @@ veryfinalmodel = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In
 
 # pairs plot
 #pairs(~Mean_Humidity + MeanDew_Point_F + #Precipitation_In + Mean_Wind_Speed_MPH + #Max_Temperature_F, data = df)
+
 ```
+
+```{r train and test, echo=FALSE}
+
+set.seed(1111)
+
+train_indices <- sample(1:nrow(df), 0.8 * nrow(df))  
+#80% for training
+train_data <- df[train_indices, ]
+test_data <- df[-train_indices, ]
+
+veryfinalmodeltest = lm(total_trips~Mean_Humidity+MeanDew_Point_F+Precipitation_In+Mean_Wind_Speed_MPH+fall_winter+weekday_weekend,data = train_data)
+
+predictions=predict(veryfinalmodeltest,newdata=test_data)
+
+mae = mean(abs(predictions-test_data$total_trips))
+
+mse = sqrt(mean((predictions-test_data$total_trips)^2))
+
+mae
+
+mse
+
+predictionsst=sum((test_data$total_trips-mean(test_data$total_trips))^2)
+
+predictionsse = sum((test_data$total_trips-predictions)^2)
+
+rsq = 1 - (predictionsse/predictionsst)
+
+```
+
 
 Each regressor is significant to at least the 0.01 level, and the diagnostic plots are satisfactory. The residual plot moving-average looks flat. The normal quantile plot has few departures from the line. The scale location plot is relatively flat, indicating constant variance across fitted values. With coefficients, the equation for our final regression model is:
 
