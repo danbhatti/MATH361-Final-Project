@@ -26,9 +26,9 @@ library(lubridate)
 ```
 
 # Introduction
-Bike share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (1). One iteration of bike share  was \emph{Pronto!} in downtown Seattle, Washington. From 2014 to 2017, 500 \emph{Pronto!} bikes operated across 54 stations on the ithsmus. The City of Seattle partnered with Socratica to collect system data during the operating window and made it publicly available via its open data platform. \emph{Pronto!} fell short of the success realized by other similar schemes in the U.S. like Capital Bikeshare, Philly’s Indego, and NYC’s CitiBike. Researchers have used this system data to conduct a post-mortem analysis as dockless providers like \emph{Lime Micromobility} filled the void left by \emph{Pronto!} (2). 
+Bike share has launched in many U.S. cities since its introduction in Washington, D.C. in 2010 (Biki). One iteration of bike share  was \emph{Pronto!} in downtown Seattle, Washington. From 2014 to 2017, 500 \emph{Pronto!} bikes operated across 54 stations on the ithsmus. The City of Seattle partnered with Socratica to collect system data during the operating window and made it publicly available via The City's open data platform. \emph{Pronto!} fell short of the success realized by other similar schemes in the U.S. like Capital Bikeshare, Philly’s Indego, and NYC’s CitiBike. Researchers have used this system data to conduct a post-mortem analysis as dockless micromobility providers currently serve riders' demand in the region better than the \emph{Pronto!} from before (University of Washington). 
 
-In this brief paper, we  investigate the relationship between weather in the service area and daily ridership. In particular, we predict daily ridership based on weather data and time of year. After cleaning the data and analyzing candidates for the response variable, we took a stepwise approach to fitting a model. At first we considered only weather-related predictors, but we strengthened our model by adding temporal predictors. We considered various aspects when comparing models such as diagnostic plots, summary statistics, multicolinearity, systematic variable selection, ANOVA and partial F-test to compare satisfactory models. For our final model, we consider interpretations, limitations, and extensions worth thorough investigation. 
+In this brief paper, we  investigate the relationship between weather in the service area and daily ridership. In particular, we predict daily ridership based on weather data and time of year. After cleaning the data and analyzing candidates for the response variable, we took a stepwise approach to fitting a model. At first we considered only weather-related predictors, but we strengthened our model by adding temporal predictors. We considered various aspects when comparing models such as diagnostic plots, summary statistics, multicolinearity, systematic variable selection, and partial F-tests before validation. For our final model, we consider interpretations, limitations, and extensions worth more thorough investigation. 
 
 
 ```{r, include=FALSE, fig.cap = "PRETTY FIGURE", out.width = "50%"}
@@ -37,9 +37,9 @@ knitr::include_graphics("pronto.png")
 
 # Exploratory Data Analysis
 ## Data Cleaning
-The data \texttt{trip.csv} and \texttt{weather.csv.xls} were downloaded from Kaggle (3). The \texttt{trip} data frame contains 275,091 cases (or rides) and 12 variables describing each ride. These data were collected over 901 days from 13 October 2014 to 31 March 2017. The relevant variables from the original 12 in this dataset are \texttt{start\_time} (day and time trip started, in PST) and \texttt{trip\_duration} (time of trip in seconds). The \texttt{weather} data frame contains 689 cases (or days) and 21 variables describing the weather that day. These data were collected from 13 October 2014 to 31 August 2016, or 689 days. Notice that the dates covered by the \texttt{weather} data set are a proper subset of the dates covered by the \texttt{trip} data set. 
+The data \texttt{trip.csv} and \texttt{weather.csv.xls} were downloaded from Kaggle (Pronto Cycle Share). The \texttt{trip} data frame contains 275,091 cases (or rides) and 12 variables describing each ride. These data were collected over 901 days from 13 October 2014 to 31 March 2017. The relevant variables from the original 12 in this dataset are \texttt{start\_time} (day and time trip started, in PST) and \texttt{trip\_duration} (time of trip in seconds). The \texttt{weather} data frame contains 689 cases (or days) and 21 variables describing the weather that day. These data were collected from 13 October 2014 to 31 August 2016, or 689 days. Notice that the dates covered by the \texttt{weather} data set are a proper subset of the dates covered by the \texttt{trip} data set. 
 
-We began by aggregating trip data for each day we have data for. From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left-joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 29 columns (variables). The variable names are listed in the table below with brief descriptions.
+We began by aggregating \texttt{trip} data for each of the 901 days. From the \texttt{trip} data frame, we created a new data frame called \texttt{ridership} that aggregates trips by day. At the end of this, \texttt{ridership} has 901 rows (days) and 3 columns (variables): \texttt{count}, \texttt{tripduration}, and \texttt{day\_number}. Because the \texttt{trip} data covers 212 days after the last observation in the \texttt{weather} data, we want to keep only the observations in \texttt{trip} that match the observations in the smaller data frame, \texttt{weather}. We created our final data frame, \texttt{df}, by left-joining weather and ridership by \texttt{day\_number}. The final data frame contains 689 rows (days) and 29 columns (variables). The variable names are listed in the table below with brief descriptions.
 
 ```{r mapping, include=FALSE}
 trip = read_csv('pronto-cycle-share-trip-data.csv')
@@ -148,14 +148,14 @@ knitr::kable(variable_descriptions, col.names = c("Variable", "Description"), ca
 Notice that nine variables in our data dictionary were created from other variables:
 \begin{itemize}
 \item \texttt{temp\_range} is computed from the difference: \texttt{Max\_Temperature\_F} - \texttt{Min\_TemperatureF} 
-\item \texttt{date} strips the day/ month/ year \texttt{"\%m/\%d/\%Y"} from the full \texttt{starttime} \texttt{"\%m/\%d/\%Y \%H:\%M"}
+\item \texttt{date} strips the day/month/year \texttt{"\%m/\%d/\%Y"} from the full \texttt{starttime} \texttt{"\%m/\%d/\%Y \%H:\%M"}
 \item \texttt{day\_number} are the days beginning 13 October 2014, the first day of observation
 \item \texttt{total\_trips} are the total trips recorded for each day
 \item \texttt{total\_durations} are the total durations for all trips each day
-\item \texttt{avg\_durations} was computed from the difference: \texttt{total\_durations} / \texttt{total\_trips}
+\item \texttt{avg\_durations} was computed from the quotient: \texttt{total\_durations} / \texttt{total\_trips}
 \item \texttt{weekday\_weekend} = 1 if \texttt{date} was a Saturday or Sunday and 0 otherwise.
 \item \texttt{season} = 0 if \texttt{date} in Spring, 1 if Summer, 2 if Fall, 3 if Winter according the the summer and winter solstices and the spring and fall equinoxes in the Northern hemisphere.
-\item \texttt{fall\_winter} was created based on whether the \texttt{season} was Fall or Winter, which roughly coincides with the wet season in the Puget Sound Region from October to April (SOURCE).
+\item \texttt{fall\_winter} was created based on whether the \texttt{season} was Fall or Winter, which roughly coincides with the wet season in the Puget Sound Region from October to April (Seattle Times).
 \end{itemize}
 
 
@@ -163,7 +163,7 @@ Notice that nine variables in our data dictionary were created from other variab
 
 The figure below plots daily bike ridership in Seattle, with the total rides taken each day in blue circles and the sum of the durations of the rides taken each day in red triangles. This figure suggests that outliers in total riders tend to coincide with outliers in ride durations. For instance, the day with the highest bike riders -- 941 on Monday, April 20, 2015 -- was also the day with the second highest sum of ride durations (359.7 hours). This is day 190, the largest outlier in the data set. It's not clear from look-up what caused bike ridership to be so high on this day; like much of the data gathered from the real world, many factors likely contributed to high ridership on this day.
 
-36 days earlier on Sunday, March 15, 2015 was the second-wettest March day on record in the Puget Sound Region (SOURCE). The rain was so severe that a mudslide occurred in Western Seattle. Knowing this, you'd expect March 15 to have been a bad day for cycling, and you'd be right: only 34 trips took place on this day with a combined ride duration of just 6.3 hours. This was the second worst day for cycling behind Sunday, December 27, 2015 with just 30 trips totaling 4.5 hours. This also happens to be the greatest leverage point by far (0.144). The coincidence between trips and durations explains the flattening of the data -- the decrease in variation from the mean -- observed in \texttt{avg\_durations}.
+36 days earlier on Sunday, March 15, 2015 was the second-wettest March day on record in the Puget Sound Region (Komo News). The rain was so severe that a mudslide occurred in Western Seattle. Knowing this, you'd expect March 15 to have been a bad day for cycling, and you'd be right: only 34 trips took place on this day with a combined ride duration of just 6.3 hours. This was the second worst day for cycling behind Sunday, December 27, 2015 with just 30 trips totaling 4.5 hours. This also happens to be the greatest leverage point by far in our final model (0.144). The coincidence between trips and durations explains the flattening of the data -- the decrease in variation from the mean -- observed in \texttt{avg\_durations}.
 
 
 ```{r sum stats,include = FALSE}
@@ -234,7 +234,7 @@ hist(df$total_durations, xlab='', main='Total Durations'); hist(log(df$total_dur
 hist(df$avg_durations, xlab='', main='Average Durations'); hist(log(df$avg_durations), xlab='', main='log(Average Durations)')
 ```
 
-Note that \texttt{total\_trips} and \texttt{total\_durations} are highly correlated (>0.82). This is consistent with our discussion on outliers. Considering the shape and spread of the distributions, note that Average Durations is bimodal, Total Durations is right-skewed, and Total Trips is roughly normal. It's clear that Total Durations makes for the easiest interpretation without being transformed. Based on visual inspection, its the most normal appearing on the six distributions. We therefore use \texttt{total\_trips} as our response variable going forward. 
+Note that \texttt{total\_trips} and \texttt{total\_durations} are highly correlated (>0.82). This is consistent with our discussion on outliers. Considering the shape and spread of the distributions, note that Average Durations is bimodal, Total Durations is right-skewed, and Total Trips is roughly normal with various units in use. It's clear that Total Durations makes for the easiest interpretation without being transformed. Based on visual inspection, its the most normal appearing of the six distributions. We therefore use \texttt{total\_trips} as our response variable going forward. 
 
 ## Selecting the Predictors
 
@@ -303,15 +303,12 @@ plot(df$Max_Gust_Speed_MPH, df$total_trips,
 
 For each of the continuous variables with recorded min, mean, and max  –- Visibility, Temperature, Dew Point, Humidity, and Sea Level Pressure -- we calculate their correlations with the response Total Trips. By feature, it turns out that Max Temperature, Min Visibility, Mean Dew Point, Mean Humidity, and Min Sea Level Pressure have the highest correlation with Total Trips (Table 2). Total Trips' high correlation with Max Temperature may be explained by the temperature at midday, when the temperature is usually highest and when people are prone to be out biking between commutes and leisure. We added each of these highest-correlation variables with the response to our baseline model. 
 
-Wind speed is a special case with variables Max Wind Speed, Mean Wind Speed, and Max Gust Speed. Though \texttt{Max\_Gust\_Speed\_MPH} had higher correlation with Total Trips than either \texttt{Max\_Wind\_Speed\_MPH} or \texttt{Mean\_Wind\_Speed\_MPH}, it also had 410 missing values. We opted to add \texttt{Mean\_Wind\_Speed\_MPH} which had the next-highest correlation with Total Trips (Figure 3). We also added Precipitation_In (a zero-inflated continuous variable) and the descriptive variable Events. 
-
-We utilized Events in two ways. First we set it such that Event was a dummy variable representing whether there was an event that day. Events included fog, fog and rain, rain, rain and snow, rain and thunderstorm, and snow. There were 328 days where there were events and 361 without. The second way we utilized Events was by making it a dummy based on whether there was rain or snow on that day (as we might not expect a strong effect from fog). 
-
+Wind speed is a special case with variables Max Wind Speed, Mean Wind Speed, and Max Gust Speed. Though \texttt{Max\_Gust\_Speed\_MPH} had higher correlation with Total Trips than either \texttt{Max\_Wind\_Speed\_MPH} or \texttt{Mean\_Wind\_Speed\_MPH}, it also had 410 missing values. We opted to add \texttt{Mean\_Wind\_Speed\_MPH} which had the next-highest correlation with Total Trips (Figure 3). We also added \texttt{Precipitation\_In} (a zero-inflated continuous variable) and the descriptive variable Events. We utilized \texttt{Events} in two ways. First, \texttt{Events} was converted to a dummy variable indicating whether there was an event for a given day day. There were 328 days with weather events and 361 without. Second, \texttt{Events} was converted to a dummy variable based only on whether there was rain or snow (precipitation) on that day. 
 
 
 ## Model Selection
 
-Our baseline model based on initial findings from exploratory data analysis is:
+Our baseline model based on initial findings from exploratory data analysis is described below:
 
   
 
@@ -325,7 +322,7 @@ $$
 
 
 
-We removed \texttt{Min\_Visibility\_Miles}, \texttt{Min\_Sea\_Level\_Pressure\_In} and \texttt{Events} because they were insignificant predictors for Total Trips Our full model at this point ($RSE$ = 83.09, $R^2$ = 0.7141, $R^2_{adj}$= 0.712, \emph{all terms significant to} 0.01) is:
+We removed \texttt{Min\_Visibility\_Miles}, \texttt{Min\_Sea\_Level\_Pressure\_In} and \texttt{Events} because they were insignificant predictors for Total Trips. Our full model at this point ($RSE$ = 83.09, $R^2$ = 0.7141, $R^2_{adj}$= 0.712, \emph{all terms significant to} 0.01) is:
 
 $$
 \begin{aligned}
@@ -333,7 +330,7 @@ $$
 &+ \beta_{i3} \texttt{Mean\_Wind\_Speed\_MPH}_i + \beta_{i4} \texttt{Mean\_Humidity}_i + \beta_{i5} \texttt{Precipitation\_In}_i \\
 \end{aligned}
 $$
-Cursory transformations failed to produce superior models. Application of a power transform produced coefficients that were mostly close to one. Both forwards and backwards selection failed to produce a superior model, although they selected models similar to ours. We discovered a partial model ($RSE$ = 83.45, $R^2$ = 0.7112, $R^2_{adj}$= 0.7095, \emph{all terms infinitesimal}) with satisfactory summary statistics and diagnostic plots. The partial model is just the full model with the \texttt{Max\_Temperature\_F} term dropped.
+Cursory transformations failed to produce superior models. Applying power transformations produced coefficients that were mostly close to one. Both forwards and backwards selection failed to produce a superior model, although they selected models similar to ours. We discovered a partial model ($RSE$ = 83.45, $R^2$ = 0.7112, $R^2_{adj}$= 0.7095, \emph{all terms infinitesimal}) with satisfactory summary statistics and diagnostic plots. The partial model is just the full model with the \texttt{Max\_Temperature\_F} term dropped.
 
 $$
 \begin{aligned}
@@ -342,11 +339,11 @@ $$
 \end{aligned}
 $$
 
-Based on ANOVA / Partial $F$-test, the full model provides a better fit to the observed data over the partial model ($F$ = 6.9579, $p$ = 0.0085). However, Variance Inflation Factor ($VIF$) -- measuring multicolinearity between the predictors and Total Trips -- is abnormally high for \texttt{Mean\_Humidity} ($VIF$ = 9.05), \texttt{MeanDew\_Point\_F} ($VIF$ = 10.68), and \texttt{Max\_Temperature\_F} ($VIF$ = 19.09) in the full model. 
+Based on the Partial $F$-test, the full model provides a better fit to the observed data over the partial model ($F$ = 6.9579, $p$ = 0.0085). However, Variance Inflation Factor ($VIF$) -- measuring multicolinearity between the predictors and Total Trips -- is abnormally high for \texttt{Mean\_Humidity} ($VIF$ = 9.05), \texttt{MeanDew\_Point\_F} ($VIF$ = 10.68), and \texttt{Max\_Temperature\_F} ($VIF$ = 19.09) in the full model. 
 
-It turns out that \texttt{Max\_Temperature\_F} has high correlation with \texttt{MeanDew\_Point\_F} (0.72) and \texttt{Mean\_Humidity} (-0.67). The results from $VIF$ analysis makes clear the confounding results in step-wise selection; In the forwards case, \texttt{Max\_Temperature\_F} makes the best 1-predictor model and it is never eliminated in successive model. The partial model has VIF values near one. Thus, the partial model is the better model.
+It turns out that \texttt{Max\_Temperature\_F} has high correlation with \texttt{MeanDew\_Point\_F} (0.72) and \texttt{Mean\_Humidity} (-0.67). The results from $VIF$ analysis makes clear the confounding results in step-wise selection; In the forwards case, \texttt{Max\_Temperature\_F} makes the best 1-predictor model and it is never eliminated in successive models. The partial model has all $VIF$ values near one. Thus, the partial model is the better model.
 
-Finally, we strengthen our model by considering temporal variation. Adding the dummy variable \texttt{weekday\_weekend} accounts for weekly changes in ridership based on commute pattern changes in the downtown for leisure, work and school. Adding the variable \texttt{season} accounts for changes in ridership based on the solstices and equinoxes while adding \texttt{fall\_winter} accounts for changes in ridership based only on the solstices:
+Finally, we strengthen our model by considering temporal and seasonal variation. Adding the dummy variable \texttt{weekday\_weekend} accounts for weekly changes in ridership based on commute pattern changes in the downtown for leisure, work and school. Adding the variable \texttt{season} accounts for changes in ridership based on the solstices and equinoxes while adding \texttt{fall\_winter} accounts for changes in ridership based only on the solstices:
 $$
 \begin{aligned}
 \texttt{total\_trips}_i^{temp} &= \beta_{i0} + \beta_{i1} \texttt{MeanDew\_Point\_F}_i \\
@@ -691,7 +688,7 @@ veryfinalmodel = lm(total_trips ~ Mean_Humidity+MeanDew_Point_F+Precipitation_In
 
 ```
 
-```{r train and test, echo=FALSE}
+```{r train and test, include=FALSE}
 
 set.seed(1111)
 
@@ -717,14 +714,49 @@ predictionsst=sum((test_data$total_trips-mean(test_data$total_trips))^2)
 predictionsse = sum((test_data$total_trips-predictions)^2)
 
 rsq = 1 - (predictionsse/predictionsst)
+```
+```{r loocv, include = FALSE}
+# Initialize vectors to store Mean Squared Errors (MSE) and Mean Absolute Errors (MAE)
+mse <- c()
+mae <- c()
+
+# Loop through each observation
+for (i in 1:nrow(df)) {
+  # Split data: leave one observation out as the test set
+  train_data <- df[-i, ]  # All data except the ith observation
+  test_data <- df[i, , drop = FALSE]  # Only the ith observation
+  
+  # Fit the model on the training data
+  veryfinalmodeltest <- lm(total_trips ~ Mean_Humidity + MeanDew_Point_F + 
+                             Precipitation_In + Mean_Wind_Speed_MPH + 
+                             fall_winter + weekday_weekend, 
+                           data = train_data)
+  
+  # Make prediction for the test observation
+  prediction <- predict(veryfinalmodeltest, newdata = test_data)
+  
+  # Compute the Mean Squared Error (MSE) for this iteration
+  mse <- c(mse, (prediction - test_data$total_trips)^2)
+  
+  # Compute the Mean Absolute Error (MAE) for this iteration
+  mae <- c(mae, abs(prediction - test_data$total_trips))
+}
+
+# Calculate the final LOOCV metrics
+final_mse <- sqrt(mean(mse))  # Mean Squared Error
+final_mae <- mean(mae)  # Mean Absolute Error
+
+# Print the results
+final_mse
+final_mae
+
+
 
 ```
 
+Each regressor is significant to at least the 0.01 level, and the diagnostic plots are satisfactory. The residual plot moving-average looks flat and the data appear randomly scattered about the line excepting a few outliers, signaling linearity is satisfied. The normal quantile plot has few departures from the line, signaling normality is satisfied. The scale location plot is relatively flat showing constant variance across fitted values, signaling that homogeneity is satisfied. 
 
-Each regressor is significant to at least the 0.01 level, and the diagnostic plots are satisfactory. The residual plot moving-average looks flat. The normal quantile plot has few departures from the line. The scale location plot is relatively flat, indicating constant variance across fitted values. 
-
-
-
+To validate the model, we completed a preliminary cross validation with an 80\%/20\% train/test split ($RMSE$ = 84.80, $MAE$ = 63.55). We completed a more rigorous Leave One Out Cross Validation (LOOCV) ($RMSE$ = 80.00, $MAE$ = 60.56, $k = 689$). Notice that $RMSE$ from LOOCV roughly matches the $RSE$ from our final model (79.64), suggesting that our model performs well on unseen data (Appendix).
 
 
 
@@ -743,33 +775,42 @@ cor(df$total_durations, df$MeanDew_Point_F)
 
 # Conclusion
 ## Interpretations
-For a given day with other variables held fixed, our model dictates
+For a given day with other variables held fixed, our model dictates \dots{}
 \begin{itemize}
-\item For a 1\% increase in Mean Relative Humidity we expect 6.2 fewer trips
-\item For a 1°F increase in Mean Dew Point, we expect 8.1 more trips
-\item For a 1 inch increase in Precipitation we expect 103.5 fewer trips
-\item For a 1 MPH increase in the Mean Wind Speed, we expect 8.8 fewer trips
-\item For a day falling in between (including) 22 September and 19 March, we expect 34.1 fewer trips than outside of those days
-\item For a weekend day, we expect 50.2 fewer trips than on a weekday
+\item For a 1\% increase in Mean Relative Humidity, we expect 6.2 fewer trips.
+\item For a 1°F increase in Mean Dew Point, we expect 8.1 more trips.
+\item For a 1 inch increase in Precipitation, we expect 103.5 fewer trips.
+\item For a 1 MPH increase in the Mean Wind Speed, we expect 8.8 fewer trips.
+\item For a day falling in between (including) 22 September and 19 March, we expect 34.1 fewer trips than outside of those days.
+\item For a weekend day, we expect 50.2 fewer trips than on a weekday.
 \end{itemize}
 
-It makes sense for trips to drop as relative humidity rises, because higher relative humidity is uncomfortable to riders. It makes sense for trips to increase as the Mean Dew Point increases, as a higher Dew Point generally signals warmer weather. It makes sense that any precipitation would flatten ridership, as biking in rain or snow could be more risky and uncomfortable. It makes sense that an increase in the miles per hour of mean wind speed would decrease ridership, as faster winds increase wind chill which feels very uncomfortable, and biking into headwinds is tiresome. It makes sense that ridership decreases in the fall and winter, as this is when days are shorter, when Seattle's rainy season starts, and when the leaves fall, potentially making it so that biking is slippery and less scenic. Lastly, an explanation for why ridership drops on the weekend is that many people likely used Pronto to get to work, which would not happen on the weekends.
+It makes sense for trips to drop as relative humidity rises, because higher relative humidity is uncomfortable to riders. Because the air is already saturated under high humidity, the perspiration on your skin is slower to evaporate. It makes sense for trips to increase as the Mean Dew Point increases, as a higher Dew Point generally signals warmer weather. It makes sense that any precipitation would flatten ridership, as biking in rain or snow could be more risky and uncomfortable without weather-proof infrastructure investments. 
 
-## Limitations
-In terms of limitations, as stated before, given that the climate of Seattle is different from many other cities, our results will have limited generalizability. Another limitation is that the weather data is for all of the Puget sound region, while the biking data is concentrated in downtown Seattle. If the weather data was specialized to the city itself, we may see the weather data have higher explanatory power. Lastly, one limitation is that two of are variables, mean humidity and mean dew point, are mathematically related, which could be cause for concern. The reason that this relationship doesn't affect the regression model is that they are not \textit{linearly} related.
+It makes sense that an increase in Mean Wind Speed would decrease ridership because faster winds increase wind chill. It makes sense that ridership decreases in the fall and winter, as this is when days are shorter, when Seattle's rainy season starts, and when the leaves fall, potentially making it so that biking is slippery and less scenic without weather-proof infrastructure investments. Lastly, an explanation for why ridership drops on the weekend is that commute patterns shift from school and work to primarily leisure.
 
-## Extensions
-Some possible extensions of our work here could be analyzing the relationships between weather and ridership in different cities. We might see different relationships between the weather and ridership in cities that have different climates than Seattle, for instance, Houston, Texas. Another potential extension would be to use interaction terms, and create a dummy variable for holidays, like a 2018 paper by Kyoungok Kim did. 
+## Limitations and Extensions
+
+Given that the climate of Seattle is unique from other major U.S. cities, our results are not readily generizable beyond the Puget Sound Region. For example, the blistering heat in Houston, Texas during the summer must have a non-linear relationship with ridership. In Houston heat, a higher wind speed should raise rather than lower ridership. Additionally, it's not clear where the weather data was recorded from. The best information we have to go off of is from Kaggle, which reports that the weather was recorded in the service area. It's not clear whether time of day or location were random or scheduled. 
+
+There is a non-linear relationship between Mean Humidity and Mean Dew Point that might be exposed in a polynomial model. A more careful consideration of definitions and relations in meteorology could inform better variable selection. Because our data are recorded on successsive days, the weather from the day before predicts the weather of the current day and thus the data are loosely dependent. Our data might be better modeled in the time-series setting. Another potential extension would be to use interaction terms between Temperature and Wind Speed, for instance (Kim 2016, An 2018). Overall, the model is impressive given the seeming unpredictability of human behavior.
 
 # References 
 
+Biki, 2024. "History of Bikeshare," Available online at: https://gobiki.org/biki-leaks/history-of-bikeshare/.
+
+University of Washington, 2019. "Bike-sharing in Seattle," UW News, October 7, 2019. Available online.
+
 Pronto Cycle Share, 2016. "Pronto Cycle Share Dataset," Kaggle. Available online at: https://www.kaggle.com/datasets/pronto/cycle-share-dataset.
 
-Kim, Kyoungok, 2018. "Investigation on the effects of weather and calendar events on bike-sharing according to the trip patterns of bike rentals of stations," Journal of Transport Geography, Elsevier, vol. 66(C), pages 309-320. 
+KOMO News, 2015. "Puget Sound region slogs through 2nd wettest March day on record," November 20, 2015. Available online at: https://komonews.com/news/local/puget-sound-region-slogs-through-2nd-wettest-march-day-on-record-11-20-2015.
+
+Seattle Times, 2015. "Seattle-specific seasons and the different types of rain," Available online at: https://www.seattletimes.com/seattle-news/weather/seattle-specific-seasons-and-the-different-types-of-rain/.
+
+Kim, Kyoungok, 2018. "Investigation on the effects of weather and calendar events on bike-sharing according to the trip patterns of bike rentals of stations," Journal of Transport Geography, Elsevier, vol. 66(C), pages 309-320.
 
 An, Ran & Zahnow, Renee & Pojani, Dorina & Corcoran, Jonathan, 2019. "Weather and cycling in New York: The case of Citibike," Journal of Transport Geography, Elsevier, vol. 77(C), pages 97-112.
 
-University of Washington, 2019. "Bike-sharing in Seattle," UW News, October 7, 2019. Available online.
 
 # Appendix
 ## Code Used for Data Cleaning
