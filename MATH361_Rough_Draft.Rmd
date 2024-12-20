@@ -72,7 +72,7 @@ weather = weather[,-1] # remove the old date
 # this will be our data frame going forward
 df = left_join(weather,ridership, by='day_number'); dim(df)
 df$avg_durations = round(df$total_durations / df$total_trips, 1)
-write.csv(df, "cleaned_data.csv", row.names = FALSE)
+
 ```
 
 ```{r add season variables, echo = FALSE}
@@ -93,6 +93,7 @@ get_season <- function(date) {
 df$season <- sapply(df$date, get_season)
 # Create fall/winter dummy: 1 if Fall or Winter, 0 otherwise
 df$fall_winter <- ifelse(df$season %in% c(2, 3), 1, 0)
+write.csv(df, "cleaned_data.csv", row.names = FALSE)
 ```
 
 ```{r rtable, echo = FALSE}
